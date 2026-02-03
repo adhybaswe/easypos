@@ -5,16 +5,74 @@
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
+const tintColorLight = '#007AFF';
 const tintColorDark = '#fff';
+
+export const theme = {
+  colors: {
+    primary: '#2f2f2fff',
+    secondary: '#5856D6',
+    background: '#F9FAFB', // Light gray background for screens
+    card: '#FFFFFF',
+    text: '#1F2937', // Dark gray for primary text
+    textSecondary: '#6B7280', // Medium gray for secondary text
+    border: '#E5E7EB',
+    error: '#FF3B30',
+    success: '#34C759',
+    warning: '#FF9500',
+    white: '#FFFFFF',
+    black: '#000000',
+    lightGray: '#F3F4F6',
+    darkGray: '#1F2937',
+    tint: tintColorLight,
+  },
+  spacing: {
+    xs: 4,
+    s: 8,
+    m: 16,
+    l: 24,
+    xl: 32,
+    xxl: 40,
+  },
+  borderRadius: {
+    s: 8,
+    m: 12,
+    l: 16,
+    xl: 24,
+    full: 9999,
+  },
+  shadows: {
+    small: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    medium: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 4,
+    },
+    large: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 8,
+    },
+  }
+};
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
+    text: theme.colors.text,
+    background: theme.colors.background,
     tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
+    icon: theme.colors.textSecondary,
+    tabIconDefault: theme.colors.textSecondary,
     tabIconSelected: tintColorLight,
   },
   dark: {

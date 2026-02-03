@@ -1,0 +1,125 @@
+import { theme } from '@/constants/theme';
+import { formatCurrency } from '@/utils/formatCurrency';
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+export default function SuccessScreen() {
+    const router = useRouter();
+    const navigation = useNavigation();
+    const params = useLocalSearchParams();
+    const { change, total, id } = params;
+
+    // Parse strings to numbers safely
+    const totalNum = parseFloat(Array.isArray(total) ? total[0] : total);
+    const changeNum = parseFloat(Array.isArray(change) ? change[0] : change);
+
+    const handleDone = () => {
+        // Pop to the top of the POS stack (index)
+        navigation.dispatch({ type: 'POP_TO_TOP' });
+    };
+
+    return (
+        <View style={styles.container}>
+            <View style={styles.card}>
+                <View style={styles.iconCircle}>
+                    <Ionicons name="checkmark" size={48} color={theme.colors.white} />
+                </View>
+                <Text style={styles.title}>Payment Successful</Text>
+                <Text style={styles.subtitle}>Transaction #{id}</Text>
+
+                <View style={styles.divider} />
+
+                <View style={styles.row}>
+                    <Text style={styles.label}>Total Amount</Text>
+                    <Text style={styles.value}>{formatCurrency(totalNum)}</Text>
+                </View>
+                <View style={styles.row}>
+                    <Text style={styles.label}>Change</Text>
+                    <Text style={styles.changeValue}>{formatCurrency(changeNum)}</Text>
+                </View>
+            </View>
+
+            <TouchableOpacity style={styles.button} onPress={handleDone}>
+                <Text style={styles.buttonText}>New Transaction</Text>
+            </TouchableOpacity>
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: theme.colors.primary,
+        justifyContent: 'center',
+        padding: 24,
+    },
+    card: {
+        backgroundColor: theme.colors.card,
+        borderRadius: 24,
+        padding: 32,
+        alignItems: 'center',
+        marginBottom: 32,
+        ...theme.shadows.large,
+    },
+    iconCircle: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: theme.colors.success,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 24,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginBottom: 8,
+        color: theme.colors.text,
+    },
+    subtitle: {
+        fontSize: 14,
+        color: theme.colors.textSecondary,
+        marginBottom: 24,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: theme.colors.border,
+        width: '100%',
+        marginBottom: 24,
+    },
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        marginBottom: 12,
+    },
+    label: {
+        fontSize: 16,
+        color: theme.colors.textSecondary,
+    },
+    value: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: theme.colors.text,
+    },
+    changeValue: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: theme.colors.primary,
+    },
+    button: {
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        padding: 20,
+        borderRadius: 16,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.4)',
+    },
+    buttonText: {
+        color: theme.colors.white,
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+});

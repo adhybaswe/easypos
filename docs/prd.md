@@ -103,10 +103,10 @@ This Mobile POS application is designed to help small to medium businesses manag
 **Setup Screen**
 - Backend selection:
   - Firebase
-  - SQL
-- SQL configuration:
-  - API Base URL
-  - API Key / Token
+  - Firebase
+  - Local SQLite
+- SQLite configuration:
+  - Database Name (default: easypos.db)
 
 ### 6.3 Product Management (Admin)
 - Create, read, update, delete products
@@ -227,11 +227,10 @@ Zustand is used to manage:
 - Firestore Database
 - Firebase Security Rules (role-based access)
 
-### Backend Option B – SQL-Based API
-- RESTful API
-- Database: MySQL / PostgreSQL
-- Authentication: JWT
-- Secure communication via HTTPS
+### Backend Option B – Local SQLite
+- Local on-device database using `expo-sqlite`
+- Ideal for standalone usage
+- Data stored locally on the device
 
 ### Development Tools
 - Expo CLI
