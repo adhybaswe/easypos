@@ -21,19 +21,19 @@ export const useProductStore = create<ProductState>((set, get) => ({
     isLoading: false,
     error: null,
 
-    loadData: () => {
+    loadData: async () => {
         set({ isLoading: true, error: null });
         try {
             // Ensure DB is initialized
-            db.initDatabase();
+            await db.initDatabase();
 
-            const products = db.getProducts();
-            const categories = db.getCategories();
+            const products = await db.getProducts();
+            const categories = await db.getCategories();
 
             // If no categories, maybe add a default one for UX
             if (categories.length === 0) {
                 const defaultCat = { id: 'cat-1', name: 'General' };
-                db.insertCategory(defaultCat);
+                await db.insertCategory(defaultCat);
                 categories.push(defaultCat);
             }
 
@@ -43,9 +43,9 @@ export const useProductStore = create<ProductState>((set, get) => ({
         }
     },
 
-    addProduct: (product) => {
+    addProduct: async (product) => {
         try {
-            db.insertProduct(product);
+            await db.insertProduct(product);
             set(state => ({ products: [...state.products, product] }));
         } catch (e: any) {
             console.error("Failed to add product", e);
@@ -53,9 +53,9 @@ export const useProductStore = create<ProductState>((set, get) => ({
         }
     },
 
-    updateProduct: (product) => {
+    updateProduct: async (product) => {
         try {
-            db.updateProductDB(product);
+            await db.updateProductDB(product);
             set(state => ({
                 products: state.products.map(p => p.id === product.id ? product : p)
             }));
@@ -64,9 +64,9 @@ export const useProductStore = create<ProductState>((set, get) => ({
         }
     },
 
-    deleteProduct: (id) => {
+    deleteProduct: async (id) => {
         try {
-            db.deleteProductDB(id);
+            await db.deleteProductDB(id);
             set(state => ({
                 products: state.products.filter(p => p.id !== id)
             }));
@@ -75,18 +75,18 @@ export const useProductStore = create<ProductState>((set, get) => ({
         }
     },
 
-    addCategory: (category) => {
+    addCategory: async (category) => {
         try {
-            db.insertCategory(category);
+            await db.insertCategory(category);
             set(state => ({ categories: [...state.categories, category] }));
         } catch (e) {
             console.error("Failed to add category", e);
         }
     },
 
-    deleteCategory: (id) => {
+    deleteCategory: async (id) => {
         try {
-            db.deleteCategoryDB(id);
+            await db.deleteCategoryDB(id);
             set(state => ({
                 categories: state.categories.filter(c => c.id !== id)
             }));

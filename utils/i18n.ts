@@ -26,6 +26,80 @@ export const translations = {
         recentTransactions: 'Transaksi Terakhir',
         noTransactions: 'Belum ada transaksi',
         order: 'Pesanan',
+        products: {
+            editProduct: 'Edit Produk',
+            newProduct: 'Produk Baru',
+            basicInfo: 'Informasi Dasar',
+            productName: 'Nama Produk',
+            price: 'Harga',
+            stock: 'Stok',
+            sku: 'Kode SKU',
+            category: 'Kategori',
+            addImage: 'Tambah Gambar',
+        },
+        common: {
+            error: 'Error',
+            save: 'Simpan',
+            cancel: 'Batal',
+            confirm: 'Konfirmasi',
+            areYouSure: 'Apakah anda yakin?',
+            fillRequired: 'Mohon isi semua field wajib.',
+            optional: 'Opsional'
+        },
+        cart: {
+            title: 'Keranjang',
+            empty: 'Keranjang Kosong',
+            total: 'Total',
+            checkout: 'Bayar',
+            clearCart: 'Hapus Keranjang',
+            items: 'item',
+            addToCart: 'Tambah ke Keranjang',
+            unitPrice: 'Harga Satuan'
+        },
+        checkout: {
+            title: 'Pembayaran',
+            totalDue: 'Total Tagihan',
+            cashReceived: 'Uang Diterima',
+            quickSelect: 'Pilih Cepat',
+            change: 'Kembalian',
+            remaining: 'Sisa Pembayaran',
+            completePayment: 'Selesaikan Pembayaran',
+            insufficientPayment: 'Jumlah pembayaran tidak mencukupi.',
+            paymentSuccess: 'Pembayaran Berhasil'
+        },
+        success: {
+            title: 'Pembayaran Berhasil',
+            transactionId: 'Transaksi #',
+            totalAmount: 'Total Tagihan',
+            change: 'Kembalian',
+            newTransaction: 'Transaksi Baru'
+        },
+        transactionDetail: {
+            title: 'Detail Transaksi',
+            transactionId: 'ID Transaksi',
+            date: 'Tanggal',
+            cashier: 'Kasir',
+            items: 'Item',
+            total: 'Total',
+            payment: 'Pembayaran',
+            change: 'Kembalian',
+            notFound: 'Transaksi tidak ditemukan',
+            goBack: 'Kembali'
+        },
+        auth: {
+            loginTitle: 'Masuk ke EasyPOS',
+            loginSubtitle: 'Silakan masuk untuk melanjutkan',
+            username: 'Nama Pengguna',
+            password: 'Kata Sandi',
+            loginButton: 'Masuk',
+            resetApp: 'Atur Ulang Aplikasi',
+            resetAppTitle: 'Atur Ulang Aplikasi?',
+            resetAppMessage: 'Apakah Anda yakin ingin mengatur ulang semua data? Ini akan menghapus konfigurasi Anda.',
+            resetButton: 'Atur Ulang',
+            errorEmpty: 'Mohon masukkan nama pengguna dan kata sandi',
+            errorInvalid: 'Kredensial tidak valid',
+            errorFailed: 'Login gagal'
+        }
     },
     en: {
         settings: 'Settings',
@@ -52,6 +126,80 @@ export const translations = {
         recentTransactions: 'Recent Transactions',
         noTransactions: 'No transactions yet',
         order: 'Order',
+        products: {
+            editProduct: 'Edit Product',
+            newProduct: 'New Product',
+            basicInfo: 'Basic Information',
+            productName: 'Product Name',
+            price: 'Price',
+            stock: 'Stock',
+            sku: 'SKU Code',
+            category: 'Category',
+            addImage: 'Add Product Image',
+        },
+        common: {
+            error: 'Error',
+            save: 'Save',
+            cancel: 'Cancel',
+            confirm: 'Confirm',
+            areYouSure: 'Are you sure?',
+            fillRequired: 'Please fill in all required fields.',
+            optional: 'Optional'
+        },
+        cart: {
+            title: 'Cart',
+            empty: 'Cart is Empty',
+            total: 'Total',
+            checkout: 'Checkout',
+            clearCart: 'Clear Cart',
+            items: 'items',
+            addToCart: 'Add to Cart',
+            unitPrice: 'Unit Price'
+        },
+        checkout: {
+            title: 'Checkout',
+            totalDue: 'Total Due',
+            cashReceived: 'Cash Received',
+            quickSelect: 'Quick Select',
+            change: 'Change to Return',
+            remaining: 'Amount Remaining',
+            completePayment: 'Complete Payment',
+            insufficientPayment: 'Payment amount is insufficient.',
+            paymentSuccess: 'Payment Successful'
+        },
+        success: {
+            title: 'Payment Successful',
+            transactionId: 'Transaction #',
+            totalAmount: 'Total Amount',
+            change: 'Change',
+            newTransaction: 'New Transaction'
+        },
+        transactionDetail: {
+            title: 'Transaction Details',
+            transactionId: 'Transaction ID',
+            date: 'Date',
+            cashier: 'Cashier',
+            items: 'Items',
+            total: 'Total',
+            payment: 'Payment',
+            change: 'Change',
+            notFound: 'Transaction not found',
+            goBack: 'Go Back'
+        },
+        auth: {
+            loginTitle: 'Login to EasyPOS',
+            loginSubtitle: 'Please sign in to continue',
+            username: 'Username',
+            password: 'Password',
+            loginButton: 'Log In',
+            resetApp: 'Reset Application Setup',
+            resetAppTitle: 'Reset App?',
+            resetAppMessage: 'Are you sure you want to reset everything? This will clear your configuration.',
+            resetButton: 'Reset',
+            errorEmpty: 'Please enter username and password',
+            errorInvalid: 'Invalid credentials',
+            errorFailed: 'Login failed'
+        }
     }
 };
 

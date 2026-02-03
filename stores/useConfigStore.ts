@@ -9,6 +9,7 @@ interface ConfigState extends AppConfig {
     language: Language;
     setBackendType: (type: 'firebase' | 'sqlite') => void;
     setSqliteConfig: (config: { databaseName: string }) => void;
+    setFirebaseConfig: (config: AppConfig['firebaseConfig']) => void;
     setCurrency: (symbol: string, locale: string) => void;
     setLanguage: (lang: Language) => void;
     setSetupComplete: (complete: boolean) => void;
@@ -20,12 +21,14 @@ export const useConfigStore = create<ConfigState>()(
         (set) => ({
             backendType: null,
             sqliteConfig: undefined,
+            firebaseConfig: undefined,
             currencySymbol: 'Rp',
             currencyLocale: 'id-ID',
             language: 'id',
             isSetupComplete: false,
             setBackendType: (type) => set({ backendType: type }),
             setSqliteConfig: (config) => set({ sqliteConfig: config }),
+            setFirebaseConfig: (config) => set({ firebaseConfig: config }),
             setCurrency: (symbol, locale) => set({ currencySymbol: symbol, currencyLocale: locale }),
             setLanguage: (lang) => {
                 const currencySymbol = lang === 'id' ? 'Rp' : '$';
@@ -40,6 +43,7 @@ export const useConfigStore = create<ConfigState>()(
             resetConfig: () => set({
                 backendType: null,
                 sqliteConfig: undefined,
+                firebaseConfig: undefined,
                 currencySymbol: 'Rp',
                 currencyLocale: 'id-ID',
                 language: 'id',

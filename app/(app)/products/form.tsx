@@ -1,6 +1,9 @@
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { theme } from '@/constants/theme';
+import { useConfigStore } from '@/stores/useConfigStore';
 import { useProductStore } from '@/stores/useProductStore';
 import { Product } from '@/types';
+import { translations } from '@/utils/i18n';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -22,6 +25,8 @@ export default function ProductFormScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const { products, categories, addProduct, updateProduct, loadData } = useProductStore();
+    const { language, currencySymbol } = useConfigStore();
+    const t = translations[language];
 
     const isEdit = !!params.id;
     const productId = params.id as string;
@@ -66,9 +71,9 @@ export default function ProductFormScreen() {
         }
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!name || !price || !stock || !categoryId) {
-            Alert.alert('Missing Information', 'Please fill in all required fields to save the product.');
+            Alert.alert(t.common.error, t.common.fillRequired);
             return;
         }
 
@@ -82,13 +87,17 @@ export default function ProductFormScreen() {
             image_uri: imageUri || undefined
         };
 
-        if (isEdit) {
-            updateProduct(payload);
-        } else {
-            addProduct(payload);
+        try {
+            if (isEdit) {
+                await updateProduct(payload);
+            } else {
+                await addProduct(payload);
+            }
+            router.back();
+        } catch (e: any) {
+            console.error(e);
+            Alert.alert(t.common.error, "Failed to save product. " + e.message);
         }
-
-        router.back();
     };
 
     return (
@@ -97,9 +106,9 @@ export default function ProductFormScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
                     <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{isEdit ? 'Edit Product' : 'New Product'}</Text>
+                <Text style={styles.headerTitle}>{isEdit ? t.products.editProduct : t.products.newProduct}</Text>
                 <TouchableOpacity onPress={handleSubmit} style={styles.saveBtn}>
-                    <Text style={styles.saveBtnText}>Save</Text>
+                    <Text style={styles.saveBtnText}>{t.common.save}</Text>
                 </TouchableOpacity>
             </View>
 
@@ -124,7 +133,7 @@ export default function ProductFormScreen() {
                                     <View style={styles.placeholderIcon}>
                                         <Ionicons name="image-outline" size={32} color={theme.colors.primary} />
                                     </View>
-                                    <Text style={styles.placeholderText}>Add Product Image</Text>
+                                    <Text style={styles.placeholderText}>{t.products.addImage}</Text>
                                 </View>
                             )}
                         </TouchableOpacity>
@@ -132,10 +141,10 @@ export default function ProductFormScreen() {
 
                     {/* Basic Info Section */}
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Basic Information</Text>
+                        <Text style={styles.sectionTitle}>{t.products.basicInfo}</Text>
                         <View style={styles.card}>
                             <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Product Name</Text>
+                                <Text style={styles.label}>{t.products.productName}</Text>
                                 <TextInput
                                     style={styles.input}
                                     value={name}
@@ -147,18 +156,15 @@ export default function ProductFormScreen() {
 
                             <View style={styles.row}>
                                 <View style={[styles.inputGroup, { flex: 1 }]}>
-                                    <Text style={styles.label}>Price</Text>
-                                    <View style={styles.currencyInput}>
-                                        <Text style={styles.currencyPrefix}>$</Text>
-                                        <TextInput
-                                            style={[styles.input, styles.inputNoBorder, { flex: 1 }]}
-                                            value={price}
-                                            onChangeText={setPrice}
-                                            keyboardType="numeric"
-                                            placeholder="0.00"
-                                            placeholderTextColor={theme.colors.textSecondary}
-                                        />
-                                    </View>
+                                    <Text style={styles.label}>{t.products.price}</Text>
+                                    <CurrencyInput
+                                        value={price}
+                                        onChangeValue={setPrice}
+                                        placeholder="0"
+                                        containerStyle={styles.formCurrencyInput}
+                                        symbolStyle={styles.formCurrencySymbol}
+                                        style={styles.formInputText}
+                                    />
                                 </View>
                                 <View style={[styles.inputGroup, { flex: 1 }]}>
                                     <Text style={styles.label}>Stock</Text>
@@ -361,6 +367,21 @@ const styles = StyleSheet.create({
         color: theme.colors.textSecondary,
         marginRight: 4,
         fontWeight: '500',
+    },
+    formCurrencyInput: {
+        backgroundColor: theme.colors.background,
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        height: 48,
+    },
+    formCurrencySymbol: {
+        fontSize: 16,
+        marginRight: 4,
+    },
+    formInputText: {
+        fontSize: 16,
+        paddingVertical: 0,
+        height: '100%',
     },
     inputNoBorder: {
         borderWidth: 0,

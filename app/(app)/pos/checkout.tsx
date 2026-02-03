@@ -1,18 +1,23 @@
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { theme } from '@/constants/theme';
 import { createTransaction } from '@/services/db';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useCartStore } from '@/stores/useCartStore';
+import { useConfigStore } from '@/stores/useConfigStore';
 import { Transaction, TransactionItem } from '@/types';
 import { formatCurrency } from '@/utils/formatCurrency';
+import { translations } from '@/utils/i18n';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function CheckoutScreen() {
     const router = useRouter();
     const { items, total, clearCart } = useCartStore();
     const { user } = useAuthStore();
+    const { language, currencySymbol } = useConfigStore();
+    const t = translations[language];
 
     const totalAmount = total();
     const [paymentAmount, setPaymentAmount] = useState('');
@@ -20,10 +25,10 @@ export default function CheckoutScreen() {
     const change = paymentAmount ? parseFloat(paymentAmount) - totalAmount : 0;
     const isSufficient = change >= 0;
 
-    const handlePayment = () => {
+    const handlePayment = async () => {
         if (!paymentAmount) return;
         if (!isSufficient) {
-            Alert.alert('Payment Error', 'The payment amount currently insufficient.');
+            Alert.alert(t.common.error, t.checkout.insufficientPayment);
             return;
         }
 
@@ -47,7 +52,7 @@ export default function CheckoutScreen() {
                 price: item.price
             }));
 
-            createTransaction(transaction, transactionItems);
+            await createTransaction(transaction, transactionItems);
 
             clearCart();
 
@@ -61,7 +66,7 @@ export default function CheckoutScreen() {
             });
 
         } catch (e: any) {
-            Alert.alert('Transaction Failed', e.message);
+            Alert.alert(t.common.error, e.message);
         }
     };
 
@@ -80,7 +85,7 @@ export default function CheckoutScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
                     <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Checkout</Text>
+                <Text style={styles.headerTitle}>{t.checkout.title}</Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -90,30 +95,24 @@ export default function CheckoutScreen() {
             >
                 <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                     <View style={styles.card}>
-                        <Text style={styles.label}>Total Amount Due</Text>
+                        <Text style={styles.label}>{t.checkout.totalDue}</Text>
                         <Text style={styles.totalAmount}>{formatCurrency(totalAmount)}</Text>
                     </View>
 
                     <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Cash Received</Text>
-                        <TextInput
-                            style={styles.input}
+                        <Text style={styles.label}>{t.checkout.cashReceived}</Text>
+                        <CurrencyInput
                             value={paymentAmount}
-                            onChangeText={setPaymentAmount}
-                            keyboardType="numeric"
-                            placeholder="0.00"
-                            placeholderTextColor={theme.colors.textSecondary}
+                            onChangeValue={setPaymentAmount}
+                            placeholder="0"
                             autoFocus
                         />
-                        <View style={styles.currencyBadge}>
-                            <Text style={styles.currencyText}>$</Text>
-                        </View>
                     </View>
 
                     {/* Quick Suggestions */}
                     {suggestionAmounts.length > 0 && (
                         <View style={styles.suggestionsContainer}>
-                            <Text style={styles.suggestionsLabel}>Quick Select</Text>
+                            <Text style={styles.suggestionsLabel}>{t.checkout.quickSelect}</Text>
                             <View style={styles.suggestions}>
                                 {suggestionAmounts.map(amount => (
                                     <TouchableOpacity
@@ -144,7 +143,7 @@ export default function CheckoutScreen() {
                                 style={{ marginBottom: 8 }}
                             />
                             <Text style={styles.resultLabel}>
-                                {isSufficient ? 'Change to Return' : 'Amount Remaining'}
+                                {isSufficient ? t.checkout.change : t.checkout.remaining}
                             </Text>
                             <Text style={[
                                 styles.resultValue,
@@ -163,7 +162,7 @@ export default function CheckoutScreen() {
                         disabled={!isSufficient}
                         activeOpacity={0.8}
                     >
-                        <Text style={styles.payText}>Complete Payment</Text>
+                        <Text style={styles.payText}>{t.checkout.completePayment}</Text>
                         {isSufficient && <Ionicons name="arrow-forward" size={20} color={theme.colors.white} />}
                     </TouchableOpacity>
                 </View>

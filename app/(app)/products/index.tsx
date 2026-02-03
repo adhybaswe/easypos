@@ -19,7 +19,7 @@ import {
 
 export default function ProductListScreen() {
     const router = useRouter();
-    const { products, loadData, deleteProduct, isLoading } = useProductStore();
+    const { products, categories, loadData, deleteProduct, isLoading } = useProductStore();
     const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
@@ -52,6 +52,14 @@ export default function ProductListScreen() {
                 <View style={styles.cardInfo}>
                     <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
                     <View style={styles.metaRow}>
+                        {(() => {
+                            const cat = categories.find(c => c.id === item.category_id);
+                            return cat ? (
+                                <View style={[styles.badge, { backgroundColor: theme.colors.primary + '20' }]}>
+                                    <Text style={[styles.badgeText, { color: theme.colors.primary }]}>{cat.name}</Text>
+                                </View>
+                            ) : null;
+                        })()}
                         <View style={styles.badge}>
                             <Text style={styles.badgeText}>Stock: {item.stock}</Text>
                         </View>

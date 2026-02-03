@@ -11,10 +11,11 @@ interface TransactionState {
 export const useTransactionStore = create<TransactionState>((set) => ({
     transactions: [],
     isLoading: false,
-    loadTransactions: () => {
+    loadTransactions: async () => {
         set({ isLoading: true });
         try {
-            const transactions = db.getTransactions();
+            await db.initDatabase(); // Ensure initialized
+            const transactions = await db.getTransactions();
             set({ transactions, isLoading: false });
         } catch (e) {
             console.error("Failed to load transactions", e);

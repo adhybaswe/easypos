@@ -10,7 +10,7 @@ const tintColorDark = '#fff';
 
 export const theme = {
   colors: {
-    primary: '#2f2f2fff',
+    primary: '#0794c7ff',
     secondary: '#5856D6',
     background: '#F9FAFB', // Light gray background for screens
     card: '#FFFFFF',

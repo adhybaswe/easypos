@@ -17,11 +17,11 @@ export const useUserManagementStore = create<UserState>((set) => ({
     isLoading: false,
     error: null,
 
-    loadUsers: () => {
+    loadUsers: async () => {
         set({ isLoading: true, error: null });
         try {
-            db.initDatabase();
-            const users = db.getUsers();
+            await db.initDatabase();
+            const users = await db.getUsers();
 
             // If no users, maybe setup incomplete, or admin doesn't exist yet in DB?
             // During setup.tsx we mostly mocked it or just set config.
@@ -33,9 +33,9 @@ export const useUserManagementStore = create<UserState>((set) => ({
         }
     },
 
-    addUser: (user) => {
+    addUser: async (user) => {
         try {
-            db.insertUser(user);
+            await db.insertUser(user);
             set((state) => ({ users: [...state.users, user] }));
         } catch (e: any) {
             console.error("Failed to add user", e);
@@ -43,9 +43,9 @@ export const useUserManagementStore = create<UserState>((set) => ({
         }
     },
 
-    updateUser: (user) => {
+    updateUser: async (user) => {
         try {
-            db.updateUserDB(user);
+            await db.updateUserDB(user);
             set((state) => ({
                 users: state.users.map((u) => (u.id === user.id ? user : u)),
             }));
@@ -55,9 +55,9 @@ export const useUserManagementStore = create<UserState>((set) => ({
         }
     },
 
-    deleteUser: (id) => {
+    deleteUser: async (id) => {
         try {
-            db.deleteUserDB(id);
+            await db.deleteUserDB(id);
             set((state) => ({
                 users: state.users.filter((u) => u.id !== id),
             }));

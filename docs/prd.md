@@ -103,8 +103,13 @@ This Mobile POS application is designed to help small to medium businesses manag
 ### 6.2 Backend Configuration
 **Setup Screen**
 - Backend selection:
-  - Firebase
-  - Firebase
+  - [x] **Firebase Integration**
+    - [x] Install Firebase SDK (`pnpm install firebase`).
+    - [x] Create `services/firebase.ts`.
+    - [x] Refactor `services/sqlite.ts` to Async.
+    - [x] Create Unified `services/db.ts`.
+    - [x] Update Setup Screen for Firebase Config.
+    - [x] Update Stores to use new Async DB Service.
   - Local SQLite
 - SQLite configuration:
   - Database Name (default: easypos.db)

@@ -1,4 +1,5 @@
 import { theme } from '@/constants/theme';
+import * as db from '@/services/db';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { useRouter } from 'expo-router';
@@ -7,14 +8,25 @@ import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View 
 
 export default function SetupScreen() {
     const router = useRouter();
-    const { setBackendType, setSqliteConfig, setSetupComplete, setCurrency } = useConfigStore();
+    const { setBackendType, setSqliteConfig, setFirebaseConfig, setSetupComplete, setCurrency } = useConfigStore();
     const { login } = useAuthStore();
 
     const [step, setStep] = useState(1);
     const [backend, setBackend] = useState<'firebase' | 'sqlite' | null>(null);
+    const [loading, setLoading] = useState(false);
 
     // SQLite config state
     const [dbName, setDbName] = useState('easypos.db');
+
+    // Firebase config state
+    const [firebaseConfig, setFirebaseConfigState] = useState({
+        apiKey: 'AIzaSyAmxgAxrlAtRnSxaKwXk4KJRznHjzZGwkw',
+        authDomain: 'easypos-21733.firebaseapp.com',
+        projectId: 'easypos-21733',
+        storageBucket: 'easypos-21733.firebasestorage.app',
+        messagingSenderId: '355211235039',
+        appId: '1:355211235039:web:88c72afd698b1142b2236a'
+    });
 
     // Admin config state
     const [username, setUsername] = useState('');
@@ -34,42 +46,77 @@ export default function SetupScreen() {
                 Alert.alert('Error', 'Please select a backend type');
                 return;
             }
+
             setBackendType(backend);
+
             if (backend === 'sqlite') {
                 if (!dbName) {
                     Alert.alert('Error', 'Please enter a database name');
                     return;
                 }
                 setSqliteConfig({ databaseName: dbName });
+            } else if (backend === 'firebase') {
+                if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+                    Alert.alert('Error', 'Please enter at least API Key and Project ID');
+                    return;
+                }
+                setFirebaseConfig(firebaseConfig);
             }
             setStep(2);
         }
     };
 
-    const handleSetup = () => {
+    const handleSetup = async () => {
         // Step 2: Create Admin & Finalize
         if (!username || !password) {
             Alert.alert('Error', 'Please enter admin credentials');
             return;
         }
 
-        // Set Currency
-        if (currencySymbol && currencyLocale) {
-            setCurrency(currencySymbol, currencyLocale);
+        setLoading(true);
+
+        try {
+            // Set Currency
+            if (currencySymbol && currencyLocale) {
+                setCurrency(currencySymbol, currencyLocale);
+            }
+
+            // Create admin user
+            const adminUser = {
+                id: 'admin-1',
+                username,
+                role: 'admin' as const,
+                is_active: true,
+                password_hash: password // In real app, hash this!
+            };
+
+            // Init DB (Async)
+            await db.initDatabase();
+
+            // Insert Admin
+            // Check if user exists first to avoid error on re-setup
+            const existingAdmin = await db.getUserByUsername(username);
+
+            if (existingAdmin) {
+                // Update existing admin
+                const updatedAdmin = { ...adminUser, id: existingAdmin.id };
+                await db.updateUserDB(updatedAdmin);
+                // Also update local adminUser object to use correct ID if we need it later
+                // But for login we can just use the updatedAdmin
+                login(updatedAdmin);
+            } else {
+                await db.insertUser(adminUser);
+                login(adminUser);
+            }
+
+            setSetupComplete(true);
+            router.replace('/(app)/(tabs)');
+        } catch (e: any) {
+            console.error(e);
+            Alert.alert('Error', 'Setup failed: ' + e.message);
+        } finally {
+            setLoading(false);
         }
-
-        // Create admin user
-        const adminUser = {
-            id: 'admin-1',
-            username,
-            role: 'admin' as const,
-            is_active: true
-        };
-
-        // We simulate creating user and logging in
-        login(adminUser);
-        setSetupComplete(true);
-        router.replace('/(app)/(tabs)');
     };
 
     return (
@@ -106,6 +153,18 @@ export default function SetupScreen() {
                                 placeholderTextColor={theme.colors.textSecondary}
                             />
                             <Text style={styles.hint}>Data will be stored locally on this device.</Text>
+                        </View>
+                    )}
+
+                    {backend === 'firebase' && (
+                        <View style={styles.form}>
+                            <Text style={styles.label}>Firebase Configuration</Text>
+                            <TextInput style={styles.input} placeholder="API Key" placeholderTextColor={theme.colors.textSecondary} value={firebaseConfig.apiKey} onChangeText={(t) => setFirebaseConfigState({ ...firebaseConfig, apiKey: t })} />
+                            <TextInput style={styles.input} placeholder="Project ID" placeholderTextColor={theme.colors.textSecondary} value={firebaseConfig.projectId} onChangeText={(t) => setFirebaseConfigState({ ...firebaseConfig, projectId: t })} />
+                            <TextInput style={styles.input} placeholder="Auth Domain (Optional)" placeholderTextColor={theme.colors.textSecondary} value={firebaseConfig.authDomain} onChangeText={(t) => setFirebaseConfigState({ ...firebaseConfig, authDomain: t })} />
+                            <TextInput style={styles.input} placeholder="Storage Bucket (Optional)" placeholderTextColor={theme.colors.textSecondary} value={firebaseConfig.storageBucket} onChangeText={(t) => setFirebaseConfigState({ ...firebaseConfig, storageBucket: t })} />
+                            <TextInput style={styles.input} placeholder="Messaging Sender ID (Optional)" placeholderTextColor={theme.colors.textSecondary} value={firebaseConfig.messagingSenderId} onChangeText={(t) => setFirebaseConfigState({ ...firebaseConfig, messagingSenderId: t })} />
+                            <TextInput style={styles.input} placeholder="App ID (Optional)" placeholderTextColor={theme.colors.textSecondary} value={firebaseConfig.appId} onChangeText={(t) => setFirebaseConfigState({ ...firebaseConfig, appId: t })} />
                         </View>
                     )}
                 </View>
@@ -154,8 +213,12 @@ export default function SetupScreen() {
                 </View>
             )}
 
-            <TouchableOpacity style={styles.button} onPress={step === 1 ? handleNext : handleSetup}>
-                <Text style={styles.buttonText}>{step === 1 ? 'Next' : 'Complete Setup'}</Text>
+            <TouchableOpacity style={styles.button} onPress={step === 1 ? handleNext : handleSetup} disabled={loading}>
+                {loading ? (
+                    <Text style={styles.buttonText}>Setting up...</Text>
+                ) : (
+                    <Text style={styles.buttonText}>{step === 1 ? 'Next' : 'Complete Setup'}</Text>
+                )}
             </TouchableOpacity>
         </ScrollView>
     );

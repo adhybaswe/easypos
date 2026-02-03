@@ -2,6 +2,7 @@ import { theme } from '@/constants/theme';
 import { useCartStore } from '@/stores/useCartStore';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { formatCurrency } from '@/utils/formatCurrency';
+import { translations } from '@/utils/i18n';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -9,7 +10,9 @@ import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react
 
 export default function CartScreen() {
     const router = useRouter();
-    useConfigStore(); // Subscribe to config changes
+    const { language } = useConfigStore();
+    const t = translations[language];
+
     // Explicitly select items to ensure updates trigger re-render
     const items = useCartStore((state) => state.items);
     const { updateQuantity, removeFromCart, clearCart } = useCartStore();
@@ -18,9 +21,9 @@ export default function CartScreen() {
     const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
     const handleClear = () => {
-        Alert.alert('Clear Cart', 'Are you sure?', [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Clear', style: 'destructive', onPress: clearCart }
+        Alert.alert(t.cart.clearCart, t.common.areYouSure, [
+            { text: t.common.cancel, style: 'cancel' },
+            { text: t.cart.clearCart, style: 'destructive', onPress: clearCart }
         ]);
     };
 
@@ -59,9 +62,9 @@ export default function CartScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                     <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Shopping Cart</Text>
+                <Text style={styles.title}>{t.cart.title}</Text>
                 <TouchableOpacity onPress={handleClear} disabled={items.length === 0}>
-                    <Text style={[styles.clearText, items.length === 0 && styles.disabledText]}>Clear</Text>
+                    <Text style={[styles.clearText, items.length === 0 && styles.disabledText]}>{t.cart.clearCart}</Text>
                 </TouchableOpacity>
             </View>
 
@@ -72,7 +75,7 @@ export default function CartScreen() {
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={
                     <View style={styles.empty}>
-                        <Text style={styles.emptyText}>Cart is empty</Text>
+                        <Text style={styles.emptyText}>{t.cart.empty}</Text>
                     </View>
                 }
             />
@@ -80,14 +83,14 @@ export default function CartScreen() {
             {items.length > 0 && (
                 <View style={styles.footer}>
                     <View style={styles.totalRow}>
-                        <Text style={styles.totalLabel}>Total</Text>
+                        <Text style={styles.totalLabel}>{t.cart.total}</Text>
                         <Text style={styles.totalValue}>{formatCurrency(totalAmount)}</Text>
                     </View>
                     <TouchableOpacity
                         style={styles.checkoutBtn}
                         onPress={() => router.push('/(app)/pos/checkout')}
                     >
-                        <Text style={styles.checkoutText}>Proceed to Checkout</Text>
+                        <Text style={styles.checkoutText}>{t.cart.checkout}</Text>
                     </TouchableOpacity>
                 </View>
             )}

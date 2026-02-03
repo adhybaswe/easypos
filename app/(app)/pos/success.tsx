@@ -1,5 +1,6 @@
 import { theme } from '@/constants/theme';
 import { formatCurrency } from '@/utils/formatCurrency';
+import { useTranslation } from '@/utils/i18n';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import React from 'react';
@@ -9,6 +10,7 @@ export default function SuccessScreen() {
     const router = useRouter();
     const navigation = useNavigation();
     const params = useLocalSearchParams();
+    const t = useTranslation();
     const { change, total, id } = params;
 
     // Parse strings to numbers safely
@@ -26,23 +28,23 @@ export default function SuccessScreen() {
                 <View style={styles.iconCircle}>
                     <Ionicons name="checkmark" size={48} color={theme.colors.white} />
                 </View>
-                <Text style={styles.title}>Payment Successful</Text>
-                <Text style={styles.subtitle}>Transaction #{id}</Text>
+                <Text style={styles.title}>{t.success.title}</Text>
+                <Text style={styles.subtitle}>{t.success.transactionId}{id}</Text>
 
                 <View style={styles.divider} />
 
                 <View style={styles.row}>
-                    <Text style={styles.label}>Total Amount</Text>
+                    <Text style={styles.label}>{t.success.totalAmount}</Text>
                     <Text style={styles.value}>{formatCurrency(totalNum)}</Text>
                 </View>
                 <View style={styles.row}>
-                    <Text style={styles.label}>Change</Text>
+                    <Text style={styles.label}>{t.success.change}</Text>
                     <Text style={styles.changeValue}>{formatCurrency(changeNum)}</Text>
                 </View>
             </View>
 
             <TouchableOpacity style={styles.button} onPress={handleDone}>
-                <Text style={styles.buttonText}>New Transaction</Text>
+                <Text style={styles.buttonText}>{t.success.newTransaction}</Text>
             </TouchableOpacity>
         </View>
     );

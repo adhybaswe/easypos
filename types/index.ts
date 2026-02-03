@@ -46,6 +46,14 @@ export interface AppConfig {
     sqliteConfig?: {
         databaseName: string;
     };
+    firebaseConfig?: {
+        apiKey: string;
+        authDomain: string;
+        projectId: string;
+        storageBucket: string;
+        messagingSenderId: string;
+        appId: string;
+    };
     currencySymbol: string; // e.g. 'Rp', '$'
     currencyLocale: string; // e.g. 'id-ID', 'en-US'
     isSetupComplete: boolean;

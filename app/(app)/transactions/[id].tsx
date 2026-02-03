@@ -3,6 +3,7 @@ import * as db from '@/services/db';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { Product, Transaction, TransactionItem } from '@/types';
 import { formatCurrency } from '@/utils/formatCurrency';
+import { useTranslation } from '@/utils/i18n';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -11,6 +12,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View
 export default function TransactionDetailScreen() {
     const router = useRouter();
     useConfigStore(); // Subscribe to updates
+    const t = useTranslation();
     const { id } = useLocalSearchParams();
 
     const [transaction, setTransaction] = useState<Transaction | null>(null);
@@ -25,11 +27,11 @@ export default function TransactionDetailScreen() {
         }
     }, [id]);
 
-    const loadDetails = (txId: string) => {
+    const loadDetails = async (txId: string) => {
         try {
-            const tx = db.getTransactionById(txId);
-            const txItems = db.getTransactionItems(txId);
-            const allProducts = db.getProducts();
+            const tx = await db.getTransactionById(txId);
+            const txItems = await db.getTransactionItems(txId);
+            const allProducts = await db.getProducts();
 
             const pMap: Record<string, Product> = {};
             allProducts.forEach(p => pMap[p.id] = p);
@@ -39,7 +41,7 @@ export default function TransactionDetailScreen() {
             setProductsMap(pMap);
 
             if (tx && tx.user_id) {
-                const user = db.getUserById(tx.user_id);
+                const user = await db.getUserById(tx.user_id);
                 if (user) {
                     setCashierName(user.username);
                 } else {
@@ -64,9 +66,9 @@ export default function TransactionDetailScreen() {
     if (!transaction) {
         return (
             <View style={styles.center}>
-                <Text style={{ color: theme.colors.text }}>Transaction not found</Text>
+                <Text style={{ color: theme.colors.text }}>{t.transactionDetail.notFound}</Text>
                 <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16 }}>
-                    <Text style={{ color: theme.colors.primary }}>Go Back</Text>
+                    <Text style={{ color: theme.colors.primary }}>{t.transactionDetail.goBack}</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -78,27 +80,27 @@ export default function TransactionDetailScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                     <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Transaction Details</Text>
+                <Text style={styles.title}>{t.transactionDetail.title}</Text>
                 <View style={{ width: 40 }} />
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
                 <View style={styles.card}>
-                    <Text style={styles.label}>Transaction ID</Text>
+                    <Text style={styles.label}>{t.transactionDetail.transactionId}</Text>
                     <Text style={styles.value}>{transaction.id}</Text>
 
                     <View style={styles.divider} />
 
-                    <Text style={styles.label}>Date</Text>
+                    <Text style={styles.label}>{t.transactionDetail.date}</Text>
                     <Text style={styles.value}>{new Date(transaction.created_at).toLocaleString()}</Text>
 
                     <View style={styles.divider} />
 
-                    <Text style={styles.label}>Cashier</Text>
+                    <Text style={styles.label}>{t.transactionDetail.cashier}</Text>
                     <Text style={styles.value}>{cashierName}</Text>
                 </View>
 
-                <Text style={styles.sectionHeader}>Items</Text>
+                <Text style={styles.sectionHeader}>{t.transactionDetail.items}</Text>
                 <View style={styles.card}>
                     {items.map((item, index) => {
                         const product = productsMap[item.product_id];
@@ -116,15 +118,15 @@ export default function TransactionDetailScreen() {
 
                 <View style={styles.card}>
                     <View style={styles.summaryRow}>
-                        <Text style={styles.summaryLabel}>Total</Text>
+                        <Text style={styles.summaryLabel}>{t.transactionDetail.total}</Text>
                         <Text style={styles.summaryValue}>{formatCurrency(transaction.total_amount)}</Text>
                     </View>
                     <View style={styles.summaryRow}>
-                        <Text style={styles.summaryLabel}>Payment</Text>
+                        <Text style={styles.summaryLabel}>{t.transactionDetail.payment}</Text>
                         <Text style={styles.summaryValue}>{formatCurrency(transaction.payment_amount)}</Text>
                     </View>
                     <View style={styles.summaryRow}>
-                        <Text style={styles.summaryLabel}>Change</Text>
+                        <Text style={styles.summaryLabel}>{t.transactionDetail.change}</Text>
                         <Text style={styles.summaryValue}>{formatCurrency(transaction.change_amount)}</Text>
                     </View>
                 </View>
