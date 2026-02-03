@@ -1,11 +1,11 @@
 import { theme } from '@/constants/theme';
+import { useCartStore } from '@/stores/useCartStore';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useCartStore } from '../../../stores/useCartStore';
 
 export default function CartScreen() {
     const router = useRouter();

@@ -1,5 +1,5 @@
+import { Product } from '@/types';
 import { create } from 'zustand';
-import { Product } from '../types';
 
 export interface CartItem extends Product {
     quantity: number;

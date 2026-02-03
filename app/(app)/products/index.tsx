@@ -1,4 +1,5 @@
 import { theme } from '@/constants/theme';
+import { useProductStore } from '@/stores/useProductStore';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -15,7 +16,6 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import { useProductStore } from '../../../stores/useProductStore';
 
 export default function ProductListScreen() {
     const router = useRouter();

@@ -1,6 +1,6 @@
+import * as db from '@/services/db';
+import { Transaction } from '@/types';
 import { create } from 'zustand';
-import * as db from '../services/db';
-import { Transaction } from '../types';
 
 interface TransactionState {
     transactions: Transaction[];

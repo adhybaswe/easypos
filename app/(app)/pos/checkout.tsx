@@ -1,13 +1,13 @@
 import { theme } from '@/constants/theme';
+import { createTransaction } from '@/services/db';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useCartStore } from '@/stores/useCartStore';
+import { Transaction, TransactionItem } from '@/types';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { createTransaction } from '../../../services/db';
-import { useAuthStore } from '../../../stores/useAuthStore';
-import { useCartStore } from '../../../stores/useCartStore';
-import { Transaction, TransactionItem } from '../../../types';
 
 export default function CheckoutScreen() {
     const router = useRouter();

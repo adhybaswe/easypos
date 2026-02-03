@@ -1,12 +1,12 @@
 import { theme } from '@/constants/theme';
+import * as db from '@/services/db';
 import { useConfigStore } from '@/stores/useConfigStore';
+import { Product, Transaction, TransactionItem } from '@/types';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import * as db from '../../../services/db';
-import { Product, Transaction, TransactionItem } from '../../../types';
 
 export default function TransactionDetailScreen() {
     const router = useRouter();

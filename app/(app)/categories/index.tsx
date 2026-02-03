@@ -1,9 +1,9 @@
 import { theme } from '@/constants/theme';
+import { useProductStore } from '@/stores/useProductStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useProductStore } from '../../../stores/useProductStore';
 
 export default function CategoryListScreen() {
     const router = useRouter();

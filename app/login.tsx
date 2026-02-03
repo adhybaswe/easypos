@@ -1,8 +1,8 @@
 import { theme } from '@/constants/theme';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useAuthStore } from '../stores/useAuthStore';
 
 export default function LoginScreen() {
     const router = useRouter();

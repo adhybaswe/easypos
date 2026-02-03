@@ -1,5 +1,5 @@
+import { Category, Product } from '@/types';
 import { openDatabaseSync, SQLiteDatabase } from 'expo-sqlite';
-import { Category, Product } from '../types';
 
 let db: SQLiteDatabase | null = null;
 

@@ -1,10 +1,10 @@
 import { theme } from '@/constants/theme';
+import { useUserManagementStore } from '@/stores/useUserManagementStore';
+import { User } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useUserManagementStore } from '../../../stores/useUserManagementStore';
-import { User } from '../../../types';
 
 export default function UserFormScreen() {
     const router = useRouter();

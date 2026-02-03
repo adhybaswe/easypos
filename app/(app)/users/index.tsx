@@ -1,10 +1,10 @@
 import { theme } from '@/constants/theme';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useUserManagementStore } from '@/stores/useUserManagementStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useAuthStore } from '../../../stores/useAuthStore';
-import { useUserManagementStore } from '../../../stores/useUserManagementStore';
 
 export default function UserListScreen() {
     const router = useRouter();

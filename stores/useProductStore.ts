@@ -1,6 +1,6 @@
+import * as db from '@/services/db';
+import { Category, Product } from '@/types';
 import { create } from 'zustand';
-import * as db from '../services/db';
-import { Category, Product } from '../types';
 
 interface ProductState {
     products: Product[];

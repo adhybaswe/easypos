@@ -1,4 +1,6 @@
 import { theme } from '@/constants/theme';
+import { useProductStore } from '@/stores/useProductStore';
+import { Product } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -15,8 +17,6 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import { useProductStore } from '../../../stores/useProductStore';
-import { Product } from '../../../types';
 
 export default function ProductFormScreen() {
     const router = useRouter();

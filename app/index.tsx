@@ -1,8 +1,8 @@
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useConfigStore } from '@/stores/useConfigStore';
 import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { useAuthStore } from '../stores/useAuthStore';
-import { useConfigStore } from '../stores/useConfigStore';
 
 export default function Index() {
     const { isSetupComplete } = useConfigStore();

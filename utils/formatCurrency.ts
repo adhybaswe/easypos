@@ -1,4 +1,4 @@
-import { useConfigStore } from '../stores/useConfigStore';
+import { useConfigStore } from '@/stores/useConfigStore';
 
 export const formatCurrency = (amount: number) => {
     const { currencyLocale, currencySymbol } = useConfigStore.getState();
