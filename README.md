@@ -1,40 +1,82 @@
-# EasyPOS Mobile App
+# EasyPOS Mobile App 📱
 
-A Mobile POS application for small to medium businesses.
+A modern, theme-based Mobile POS (Point of Sale) application designed for small to medium businesses. Built with React Native (Expo) and TypeScript.
 
-## Tech Stack
-- **Framework**: Expo (React Native)
-- **Language**: TypeScript
-- **State Management**: Zustand (Persisted with AsyncStorage)
-- **Navigation**: Expo Router
-- **Backend Config**: Configurable (Firebase / SQL)
+## 🚀 Key Features
 
-## Setup
+### 🎨 Modern UI/UX
+- **Centralized Theme System**: Consistent design system (`theme.ts`) managing colors, spacing, and typography across the app.
+- **Interactive Dashboard**:
+  - **Admin**: Revenue overview, quick action grid (Manage Products, Users, Categories), and a floating action card for high-frequency tasks (POS, History).
+  - **Cashier**: Simplified interface focused on fast transaction processing.
 
-1. Install dependencies:
+### 🛠️ Core Functionality
+- **Setup Flow**: guided onboarding to select backend (SQLite/Firebase), configure currency (Symbol/Locale), and create the first Admin account.
+- **Authentication**: Role-based login (Admin/Cashier) with secure session management.
+- **Point of Sale (POS)**:
+  - Visual product grid with category filtering and search.
+  - Cart management (adjust quantities, remove items).
+  - Checkout with automatic total calculation and 'Quick Money' chips.
+  - Receipt summary screen.
+- **Inventory Management**:
+  - **Products**: Add/Edit/Delete products with image support (Avatar API/URL) and price management.
+  - **Categories**: Organize products into manageable categories.
+- **User Management**:
+  - Create and manage staff accounts (Admins & Cashiers).
+- **Transaction History**: View detailed logs of past sales.
+
+### ⚙️ Technical Highlights
+- **Framework**: Expo (React Native) with File-based Routing (`expo-router`).
+- **Language**: TypeScript for type safety.
+- **State Management**: Zustand (Persisted stores for Auth, Cart, Config).
+- **Database**:
+  - **SQLite**: Local, offline-first data storage (using `expo-sqlite`).
+  - **Firebase**: (Configurable option).
+- **Icons**: Ionicons (`@expo/vector-icons`).
+
+## 📂 Project Structure
+
+```
+easypos/
+├── app/                  # Application routes (Expo Router)
+│   ├── (app)/            # Protected application routes
+│   │   ├── (tabs)/       # Main Dashboard & Settings tabs
+│   │   ├── pos/          # POS Flow (Cart, Checkout, Success)
+│   │   ├── products/     # Product Management
+│   │   ├── users/        # User Management
+│   │   └── transactions/ # Transaction Details
+│   ├── login.tsx         # Authentication Screen
+│   └── setup.tsx         # Initial Setup Screen
+├── components/           # Reusable UI Components
+├── constants/            # Theme & Config Constants
+├── stores/               # State Management (Zustand)
+├── services/             # Database & API Services
+├── types/                # TypeScript Definitions
+└── utils/                # Helper Functions (Currency, i18n)
+```
+
+## ⚡ Getting Started
+
+1. **Install Dependencies**:
    ```bash
    pnpm install
    ```
 
-2. Run the app:
+2. **Run the App**:
    ```bash
    pnpm run android
    # or
    pnpm run ios
    ```
 
-## Project Structure
-- `app/`: Application routes (Expo Router).
-  - `(app)/`: Authenticated routes.
-  - `setup.tsx`: Initial setup screen.
-  - `login.tsx`: Login screen.
-- `stores/`: Zustand stores (Auth, Config, Cart, Product).
-- `types/`: TypeScript interfaces.
-- `components/`: UI components.
+3. **Inital Setup**:
+   - On first launch, you will be prompted to choose a backend (select **Local SQLite** for standalone use).
+   - Set up your Store Currency (e.g., `Rp` / `id-ID` or `$ / en-US`).
+   - Create your Admin account.
 
-## Features Implemented
-- **Setup Flow**: Choose backend, Configure API, Create Admin.
-- **Authentication**: Admin/Cashier login (simulated logic aligned with PRD).
-- **Dashboard**: Role-based views for Admin and Cashier.
-- **Data Models**: Types defined for User, Product, Transaction, etc.
+## 📸 Screenshots
 
+*(Placeholders)*
+- **Dashboard**: Modern grid layout with stats.
+- **POS**: Product grid and Cart.
+- **Checkout**: Payment input with quick chips.

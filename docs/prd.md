@@ -25,6 +25,7 @@ This Mobile POS application is designed to help small to medium businesses manag
 - Support multi-user access with role-based permissions
 - Deliver standard POS functionality (products, cart, checkout, reports)
 - Allow flexible backend configuration (Firebase or SQL)
+- **Implement a modern, centralized theme-based UI system for consistent branding**
 
 ### Success Metrics
 - Admin can complete initial setup without errors
@@ -107,8 +108,20 @@ This Mobile POS application is designed to help small to medium businesses manag
   - Local SQLite
 - SQLite configuration:
   - Database Name (default: easypos.db)
+- **Currency Configuration:**
+  - Symbol (e.g., Rp, $, €)
+  - Locale (e.g., id-ID, en-US)
 
-### 6.3 Product Management (Admin)
+### 6.3 UI & Experience
+- **Centralized Theme System:**
+  - Consistent colors, typography, and spacing via `theme.ts`.
+  - Modern "Card-based" layout for dashboards and lists.
+- **Admin Dashboard:**
+  - Modern grid layout for quick actions (Manage Products, Users, etc.).
+  - Floating action card for high-frequency tasks.
+  - Quick revenue overview.
+
+### 6.4 Product Management (Admin)
 - Create, read, update, delete products
 - Product attributes:
   - Name
@@ -118,10 +131,10 @@ This Mobile POS application is designed to help small to medium businesses manag
   - SKU (optional)
 - Search and filter products
 
-### 6.4 Category Management (Admin)
+### 6.5 Category Management (Admin)
 - Create, read, update, delete categories
 
-### 6.5 User Management (Admin)
+### 6.6 User Management (Admin)
 - Create user
   - Username
   - Password
@@ -129,7 +142,7 @@ This Mobile POS application is designed to help small to medium businesses manag
 - Edit user
 - Activate / deactivate user
 
-### 6.6 POS / Transactions (Admin & Cashier)
+### 6.7 POS / Transactions (Admin & Cashier)
 - Product list view
 - Shopping cart
 - Update item quantity
@@ -138,7 +151,7 @@ This Mobile POS application is designed to help small to medium businesses manag
 - Change calculation
 - Save transaction
 
-### 6.7 Reports
+### 6.8 Reports
 
 **Admin**
 - Daily sales report
