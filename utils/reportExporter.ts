@@ -19,21 +19,22 @@ export const exportToCSV = async (transactions: Transaction[], users: User[]) =>
             const timeStr = dateObj.toLocaleTimeString();
             const cashier = users.find(u => u.id === tx.user_id)?.username || 'Unknown';
 
-            // Handle possible quotes/commas in names by wrapping and escaping
             const safeCashier = cashier.replace(/"/g, '""');
             csvContent += `"${tx.id}","${dateStr}","${timeStr}","${safeCashier}","${tx.total_amount}"\n`;
         });
 
         const fileName = `easypos_report_${Date.now()}.csv`;
+        // Ensure we are using the legacy cacheDirectory
         const filePath = `${FileSystem.cacheDirectory}${fileName}`;
 
+        // Use the legacy writeAsStringAsync
         await FileSystem.writeAsStringAsync(filePath, csvContent, {
             encoding: 'utf8',
         });
 
         await Sharing.shareAsync(filePath, {
             mimeType: 'text/csv',
-            dialogTitle: 'Export CSV Report',
+            dialogTitle: 'Export Laporan CSV',
         });
     } catch (error) {
         console.error('CSV Export Error:', error);
