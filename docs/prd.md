@@ -53,9 +53,11 @@ This Mobile POS application is designed to help small to medium businesses manag
 - Log in to the application
 - Manage products (CRUD)
 - Manage categories
+- Manage discounts & promos
 - Manage users (Admin & Cashier)
 - View all reports
 - Configure backend during initial setup
+- Reset application setup (Admin Only)
 
 ### 4.2 Cashier
 - Log in to the application
@@ -87,9 +89,10 @@ This Mobile POS application is designed to help small to medium businesses manag
 2. Input quantity
 3. Add to cart
 4. Checkout
-5. Enter payment amount
-6. Display change
-7. Complete transaction
+5. Select Discount / Promo (Optional)
+6. Enter payment amount
+7. Display change
+8. Complete transaction
 
 ---
 
@@ -121,9 +124,13 @@ This Mobile POS application is designed to help small to medium businesses manag
 - **Centralized Theme System:**
   - Consistent colors, typography, and spacing via `theme.ts`.
   - Modern "Card-based" layout for dashboards and lists.
+- **Simplified Navigation:**
+  - Stack-based navigation (removed redundant bottom tabs).
 - **Admin Dashboard:**
-  - Modern grid layout for quick actions (Manage Products, Users, etc.).
+  - Modern grid layout for quick actions (Manage Products, Users, Discounts, etc.).
   - Floating action card for high-frequency tasks.
+  - Initials-based avatar for personal touch.
+  - Refined header (minimum visual noise, removed notifications).
   - Quick revenue overview.
 
 ### 6.4 Product Management (Admin)
@@ -139,6 +146,11 @@ This Mobile POS application is designed to help small to medium businesses manag
 ### 6.5 Category Management (Admin)
 - Create, read, update, delete categories
 
+### 6.6 Discount Management (Admin)
+- Create, read, update, delete discounts
+- Support for **Percentage (%)** or **Fixed Amount** discounts.
+- Toggle active/inactive status.
+
 ### 6.6 User Management (Admin)
 - Create user
   - Username
@@ -151,10 +163,11 @@ This Mobile POS application is designed to help small to medium businesses manag
 - Product list view
 - Shopping cart
 - Update item quantity
-- Automatic total calculation
+- Select and apply Discounts/Promos
+- Automatic total calculation (including discounts)
 - Payment input
 - Change calculation
-- Save transaction
+- Save transaction with discount audit trail
 
 ### 6.8 Reports
 
@@ -210,9 +223,19 @@ This Mobile POS application is designed to help small to medium businesses manag
 ### Transaction
 - id
 - user_id
+- discount_id (optional)
+- discount_amount
 - total_amount
 - payment_amount
 - change_amount
+- created_at
+
+### Discount
+- id
+- name
+- type ('percentage' | 'fixed')
+- value
+- is_active
 - created_at
 
 ### TransactionItem

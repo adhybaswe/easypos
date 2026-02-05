@@ -7,8 +7,9 @@ A modern, theme-based Mobile POS (Point of Sale) application designed for small 
 ### 🎨 Modern UI/UX
 - **Centralized Theme System**: Consistent design system (`theme.ts`) managing colors, spacing, and typography across the app.
 - **Interactive Dashboard**:
-  - **Admin**: Revenue overview, quick action grid (Manage Products, Users, Categories), and a floating action card for high-frequency tasks (POS, History).
+  - **Admin**: Revenue overview, quick action grid (Products, Users, Categories, Discounts), initials-based avatar, and a focused header.
   - **Cashier**: Simplified interface focused on fast transaction processing.
+- **Simplified Navigation**: Clean stack-based navigation replacing redundant bottom tabs.
 
 ### 🛠️ Core Functionality
 - **Setup Flow**: guided onboarding to select backend (SQLite/Firebase), configure currency (Symbol/Locale), and create the first Admin account.
@@ -21,8 +22,10 @@ A modern, theme-based Mobile POS (Point of Sale) application designed for small 
 - **Inventory Management**:
   - **Products**: Add/Edit/Delete products with image support (Avatar API/URL) and price management.
   - **Categories**: Organize products into manageable categories.
+- **Discount & Promo**: Add/Edit/Delete discounts (Percentage or Fixed amount), toggle active/inactive status.
 - **User Management**:
   - Create and manage staff accounts (Admins & Cashiers).
+- **Application Reset**: Admin-only feature to reset all data and configuration from the settings menu.
 - **Transaction History**: View detailed logs of past sales.
 
 ### ⚙️ Technical Highlights
@@ -39,11 +42,15 @@ A modern, theme-based Mobile POS (Point of Sale) application designed for small 
 ```
 easypos/
 ├── app/                  # Application routes (Expo Router)
-│   ├── (app)/            # Protected application routes
-│   │   ├── (tabs)/       # Main Dashboard & Settings tabs
+│   ├── (app)/            # Protected application routes (Stack Navigation)
+│   │   ├── index.tsx     # Main Dashboard
+│   │   ├── settings.tsx  # User Settings & Reset App
 │   │   ├── pos/          # POS Flow (Cart, Checkout, Success)
 │   │   ├── products/     # Product Management
+│   │   ├── discounts/    # Discount Management
+│   │   ├── categories/   # Category Management
 │   │   ├── users/        # User Management
+│   │   └── stats/        # Statistical Overview
 │   │   └── transactions/ # Transaction Details
 │   ├── login.tsx         # Authentication Screen
 │   └── setup.tsx         # Initial Setup Screen
