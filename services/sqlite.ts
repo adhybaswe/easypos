@@ -1,4 +1,4 @@
-import { Category, Product, Transaction, TransactionItem, User } from '@/types';
+import { Category, Discount, Product, Transaction, TransactionItem, User } from '@/types';
 import { openDatabaseSync, SQLiteDatabase } from 'expo-sqlite';
 
 let db: SQLiteDatabase | null = null;
@@ -64,7 +64,43 @@ export const initDatabase = async () => {
       FOREIGN KEY (transaction_id) REFERENCES transactions (id),
       FOREIGN KEY (product_id) REFERENCES products (id)
     );
+    CREATE TABLE IF NOT EXISTS discounts (
+      id TEXT PRIMARY KEY NOT NULL,
+      name TEXT NOT NULL,
+      type TEXT NOT NULL,
+      value REAL NOT NULL,
+      is_active INTEGER DEFAULT 1
+    );
     `);
+};
+
+// --- Discounts ---
+
+export const getDiscounts = async (): Promise<Discount[]> => {
+    const database = getDB();
+    const result = database.getAllSync<any>('SELECT * FROM discounts');
+    return result.map(d => ({ ...d, is_active: !!d.is_active }));
+};
+
+export const insertDiscount = async (discount: Discount) => {
+    const database = getDB();
+    database.runSync(
+        'INSERT INTO discounts (id, name, type, value, is_active) VALUES (?, ?, ?, ?, ?)',
+        [discount.id, discount.name, discount.type, discount.value, discount.is_active ? 1 : 0]
+    );
+};
+
+export const updateDiscountDB = async (discount: Discount) => {
+    const database = getDB();
+    database.runSync(
+        'UPDATE discounts SET name = ?, type = ?, value = ?, is_active = ? WHERE id = ?',
+        [discount.name, discount.type, discount.value, discount.is_active ? 1 : 0, discount.id]
+    );
+};
+
+export const deleteDiscountDB = async (id: string) => {
+    const database = getDB();
+    database.runSync('DELETE FROM discounts WHERE id = ?', [id]);
 };
 
 // --- Products ---
@@ -196,8 +232,14 @@ export const createTransaction = async (transaction: Transaction, items: Transac
     }
 };
 
-export const getTransactions = async (limit: number = 20): Promise<Transaction[]> => {
+export const getTransactions = async (limit: number = 20, userId?: string): Promise<Transaction[]> => {
     const database = getDB();
+    if (userId) {
+        return database.getAllSync<Transaction>(
+            'SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT ?',
+            [userId, limit]
+        );
+    }
     const result = database.getAllSync<Transaction>('SELECT * FROM transactions ORDER BY created_at DESC LIMIT ?', [limit]);
     return result;
 };

@@ -31,12 +31,23 @@ export interface TransactionItem {
     price: number; // Price at the time of transaction
 }
 
+export interface Discount {
+    id: string;
+    name: string;
+    type: 'percentage' | 'fixed';
+    value: number;
+    is_active: boolean;
+}
+
 export interface Transaction {
     id: string;
     user_id: string;
     total_amount: number;
     payment_amount: number;
     change_amount: number;
+    discount_id?: string;
+    discount_amount?: number;
+    subtotal?: number;
     created_at: string; // ISO string
     items?: TransactionItem[];
 }

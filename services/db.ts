@@ -1,5 +1,5 @@
 import { useConfigStore } from '@/stores/useConfigStore';
-import { Category, Product, Transaction, TransactionItem, User } from '@/types';
+import { Category, Discount, Product, Transaction, TransactionItem, User } from '@/types';
 import * as firebase from './firebase';
 import * as sqlite from './sqlite';
 
@@ -89,8 +89,8 @@ export const createTransaction = async (transaction: Transaction, items: Transac
     return getBackend().createTransaction(transaction, items);
 };
 
-export const getTransactions = async (limit: number = 20): Promise<Transaction[]> => {
-    return getBackend().getTransactions(limit);
+export const getTransactions = async (limitCount: number = 20, userId?: string): Promise<Transaction[]> => {
+    return getBackend().getTransactions(limitCount, userId);
 };
 
 export const getTransactionItems = async (transactionId: string): Promise<TransactionItem[]> => {
@@ -99,4 +99,22 @@ export const getTransactionItems = async (transactionId: string): Promise<Transa
 
 export const getTransactionById = async (id: string): Promise<Transaction | null> => {
     return getBackend().getTransactionById(id);
+};
+
+// --- Discounts ---
+
+export const getDiscounts = async (): Promise<Discount[]> => {
+    return getBackend().getDiscounts();
+};
+
+export const insertDiscount = async (discount: Discount) => {
+    return getBackend().insertDiscount(discount);
+};
+
+export const updateDiscountDB = async (discount: Discount) => {
+    return getBackend().updateDiscountDB(discount);
+};
+
+export const deleteDiscountDB = async (id: string) => {
+    return getBackend().deleteDiscountDB(id);
 };

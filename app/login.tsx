@@ -1,7 +1,6 @@
 import { theme } from '@/constants/theme';
 import * as db from '@/services/db';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { useConfigStore } from '@/stores/useConfigStore';
 import { useTranslation } from '@/utils/i18n';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -11,7 +10,6 @@ import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, Te
 export default function LoginScreen() {
     const router = useRouter();
     const { login } = useAuthStore();
-    const { resetConfig } = useConfigStore();
     const t = useTranslation();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -30,7 +28,7 @@ export default function LoginScreen() {
             if (user) {
                 if (user.password_hash === password) {
                     login(user);
-                    router.replace('/(app)/(tabs)');
+                    router.replace('/(app)');
                     return;
                 }
             }
@@ -41,19 +39,7 @@ export default function LoginScreen() {
         }
     };
 
-    const handleReset = () => {
-        Alert.alert(t.auth.resetAppTitle, t.auth.resetAppMessage, [
-            { text: t.common.cancel, style: 'cancel' },
-            {
-                text: t.auth.resetButton,
-                style: 'destructive',
-                onPress: () => {
-                    resetConfig();
-                    router.replace('/');
-                }
-            }
-        ]);
-    };
+
 
     return (
         <KeyboardAvoidingView
@@ -108,12 +94,7 @@ export default function LoginScreen() {
                         <Ionicons name="arrow-forward" size={20} color={theme.colors.white} style={{ marginLeft: 8 }} />
                     </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={styles.resetButton}
-                        onPress={handleReset}
-                    >
-                        <Text style={styles.resetButtonText}>{t.auth.resetApp}</Text>
-                    </TouchableOpacity>
+
                 </View>
             </ScrollView>
         </KeyboardAvoidingView>
@@ -206,16 +187,6 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
     },
-    resetButton: {
-        marginTop: 32,
-        alignItems: 'center',
-        padding: 10,
-    },
-    resetButtonText: {
-        color: theme.colors.textSecondary,
-        fontSize: 14,
-        fontWeight: '500',
-        textDecorationLine: 'underline',
-    },
+
 });
 

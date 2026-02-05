@@ -1,5 +1,5 @@
 import { useConfigStore } from '@/stores/useConfigStore';
-import { Category, Product, Transaction, TransactionItem, User } from '@/types';
+import { Category, Discount, Product, Transaction, TransactionItem, User } from '@/types';
 import { FirebaseApp, getApp, getApps, initializeApp } from 'firebase/app';
 import {
     collection,
@@ -170,9 +170,14 @@ export const createTransaction = async (transaction: Transaction, items: Transac
     await batch.commit();
 };
 
-export const getTransactions = async (limitCount: number = 20): Promise<Transaction[]> => {
+export const getTransactions = async (limitCount: number = 20, userId?: string): Promise<Transaction[]> => {
     const db = getDB();
-    const q = query(collection(db, "transactions"), orderBy("created_at", "desc"), limit(limitCount));
+    let q;
+    if (userId) {
+        q = query(collection(db, "transactions"), where("user_id", "==", userId), orderBy("created_at", "desc"), limit(limitCount));
+    } else {
+        q = query(collection(db, "transactions"), orderBy("created_at", "desc"), limit(limitCount));
+    }
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => doc.data() as Transaction);
 };
@@ -189,4 +194,27 @@ export const getTransactionById = async (id: string): Promise<Transaction | null
     const docRef = doc(db, "transactions", id);
     const docSnap = await getDoc(docRef);
     return docSnap.exists() ? (docSnap.data() as Transaction) : null;
+};
+
+// --- Discounts ---
+
+export const getDiscounts = async (): Promise<Discount[]> => {
+    const db = getDB();
+    const querySnapshot = await getDocs(collection(db, "discounts"));
+    return querySnapshot.docs.map(doc => doc.data() as Discount);
+};
+
+export const insertDiscount = async (discount: Discount) => {
+    const db = getDB();
+    await setDoc(doc(db, "discounts", discount.id), discount);
+};
+
+export const updateDiscountDB = async (discount: Discount) => {
+    const db = getDB();
+    await updateDoc(doc(db, "discounts", discount.id), { ...discount });
+};
+
+export const deleteDiscountDB = async (id: string) => {
+    const db = getDB();
+    await deleteDoc(doc(db, "discounts", id));
 };

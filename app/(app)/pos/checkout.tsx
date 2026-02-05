@@ -4,13 +4,14 @@ import { createTransaction } from '@/services/db';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useCartStore } from '@/stores/useCartStore';
 import { useConfigStore } from '@/stores/useConfigStore';
-import { Transaction, TransactionItem } from '@/types';
+import { useDiscountStore } from '@/stores/useDiscountStore';
+import { Discount, Transaction, TransactionItem } from '@/types';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { translations } from '@/utils/i18n';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, FlatList, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function CheckoutScreen() {
     const router = useRouter();
@@ -19,9 +20,23 @@ export default function CheckoutScreen() {
     const { language, currencySymbol } = useConfigStore();
     const t = translations[language];
 
-    const totalAmount = total();
+    const totalAmountBeforeDiscount = total();
+    const { discounts, loadDiscounts } = useDiscountStore();
+    const [selectedDiscount, setSelectedDiscount] = useState<Discount | null>(null);
+    const [showDiscountModal, setShowDiscountModal] = useState(false);
     const [paymentAmount, setPaymentAmount] = useState('');
 
+    useEffect(() => {
+        loadDiscounts();
+    }, []);
+
+    const discountAmount = selectedDiscount
+        ? (selectedDiscount.type === 'percentage'
+            ? (totalAmountBeforeDiscount * selectedDiscount.value / 100)
+            : selectedDiscount.value)
+        : 0;
+
+    const totalAmount = Math.max(0, totalAmountBeforeDiscount - discountAmount);
     const change = paymentAmount ? parseFloat(paymentAmount) - totalAmount : 0;
     const isSufficient = change >= 0;
 
@@ -38,6 +53,9 @@ export default function CheckoutScreen() {
             const transaction: Transaction = {
                 id: transactionId,
                 user_id: user?.id || 'unknown',
+                subtotal: totalAmountBeforeDiscount,
+                discount_id: selectedDiscount?.id,
+                discount_amount: discountAmount,
                 total_amount: totalAmount,
                 payment_amount: parseFloat(paymentAmount),
                 change_amount: change,
@@ -95,9 +113,33 @@ export default function CheckoutScreen() {
             >
                 <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                     <View style={styles.card}>
-                        <Text style={styles.label}>{t.checkout.totalDue}</Text>
-                        <Text style={styles.totalAmount}>{formatCurrency(totalAmount)}</Text>
+                        <Text style={styles.label}>{t.cart.total}</Text>
+                        <Text style={[styles.totalAmount, selectedDiscount && styles.strikethrough]}>
+                            {formatCurrency(totalAmountBeforeDiscount)}
+                        </Text>
+
+                        {selectedDiscount && (
+                            <View style={styles.discountRow}>
+                                <Text style={styles.discountLabel}>Diskon: {selectedDiscount.name}</Text>
+                                <Text style={styles.discountValue}>-{formatCurrency(discountAmount)}</Text>
+                            </View>
+                        )}
+
+                        {selectedDiscount && (
+                            <Text style={styles.finalTotal}>{formatCurrency(totalAmount)}</Text>
+                        )}
                     </View>
+
+                    <TouchableOpacity
+                        style={styles.discountPickerBtn}
+                        onPress={() => setShowDiscountModal(true)}
+                    >
+                        <Ionicons name="pricetag-outline" size={20} color={theme.colors.primary} />
+                        <Text style={styles.discountPickerText}>
+                            {selectedDiscount ? 'Ganti Diskon' : 'Pilih Diskon / Promo'}
+                        </Text>
+                        <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+                    </TouchableOpacity>
 
                     <View style={styles.inputContainer}>
                         <Text style={styles.label}>{t.checkout.cashReceived}</Text>
@@ -166,6 +208,52 @@ export default function CheckoutScreen() {
                         {isSufficient && <Ionicons name="arrow-forward" size={20} color={theme.colors.white} />}
                     </TouchableOpacity>
                 </View>
+
+                {/* Discount Modal */}
+                <Modal visible={showDiscountModal} animationType="slide" transparent>
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContent}>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>Pilih Diskon</Text>
+                                <TouchableOpacity onPress={() => setShowDiscountModal(false)}>
+                                    <Ionicons name="close" size={24} color={theme.colors.text} />
+                                </TouchableOpacity>
+                            </View>
+
+                            <FlatList
+                                data={discounts.filter(d => d.is_active)}
+                                keyExtractor={item => item.id}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.discountItem,
+                                            selectedDiscount?.id === item.id && styles.discountItemActive
+                                        ]}
+                                        onPress={() => {
+                                            setSelectedDiscount(selectedDiscount?.id === item.id ? null : item);
+                                            setShowDiscountModal(false);
+                                        }}
+                                    >
+                                        <View>
+                                            <Text style={styles.discountItemName}>{item.name}</Text>
+                                            <Text style={styles.discountItemValue}>
+                                                {item.type === 'percentage' ? `${item.value}%` : formatCurrency(item.value)}
+                                            </Text>
+                                        </View>
+                                        {selectedDiscount?.id === item.id && (
+                                            <Ionicons name="checkmark-circle" size={24} color={theme.colors.primary} />
+                                        )}
+                                    </TouchableOpacity>
+                                )}
+                                ListEmptyComponent={
+                                    <View style={styles.emptyDiscounts}>
+                                        <Text style={styles.emptyDiscountsText}>Tidak ada diskon aktif</Text>
+                                    </View>
+                                }
+                            />
+                        </View>
+                    </View>
+                </Modal>
             </KeyboardAvoidingView>
         </View>
     );
@@ -333,5 +421,109 @@ const styles = StyleSheet.create({
         color: theme.colors.white,
         fontSize: 18,
         fontWeight: '700',
+    },
+    strikethrough: {
+        textDecorationLine: 'line-through',
+        fontSize: 24,
+        color: theme.colors.textSecondary,
+        marginBottom: 4,
+    },
+    discountRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        marginTop: 8,
+        paddingTop: 8,
+        borderTopWidth: 1,
+        borderTopColor: theme.colors.border,
+    },
+    discountLabel: {
+        fontSize: 14,
+        color: theme.colors.textSecondary,
+    },
+    discountValue: {
+        fontSize: 14,
+        color: theme.colors.error,
+        fontWeight: '700',
+    },
+    finalTotal: {
+        fontSize: 42,
+        fontWeight: '800',
+        color: theme.colors.primary,
+        marginTop: 8,
+    },
+    discountPickerBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: theme.colors.card,
+        padding: 16,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        marginBottom: 24,
+        gap: 12,
+    },
+    discountPickerText: {
+        flex: 1,
+        fontSize: 16,
+        fontWeight: '600',
+        color: theme.colors.text,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
+        backgroundColor: theme.colors.card,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        minHeight: '40%',
+        maxHeight: '80%',
+        padding: 24,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: theme.colors.text,
+    },
+    discountItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        marginBottom: 12,
+    },
+    discountItemActive: {
+        borderColor: theme.colors.primary,
+        backgroundColor: theme.colors.primary + '10',
+    },
+    discountItemName: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: theme.colors.text,
+    },
+    discountItemValue: {
+        fontSize: 14,
+        color: theme.colors.primary,
+        fontWeight: '700',
+        marginTop: 4,
+    },
+    emptyDiscounts: {
+        padding: 40,
+        alignItems: 'center',
+    },
+    emptyDiscountsText: {
+        color: theme.colors.textSecondary,
+        fontSize: 16,
     },
 });
