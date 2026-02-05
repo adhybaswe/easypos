@@ -3,13 +3,16 @@ import * as db from '@/services/db';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useProductStore } from '@/stores/useProductStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
+import { useUserManagementStore } from '@/stores/useUserManagementStore';
 import { Product } from '@/types';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { useTranslation } from '@/utils/i18n';
+import { exportToCSV, exportToPDF } from '@/utils/reportExporter';
+import { useActionSheet } from '@expo/react-native-action-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function StatsScreen() {
@@ -19,7 +22,10 @@ export default function StatsScreen() {
     const { user } = useAuthStore();
     const { transactions, loadTransactions } = useTransactionStore();
     const { products, loadData: loadProducts } = useProductStore();
+    const { users, loadUsers } = useUserManagementStore();
+    const { showActionSheetWithOptions } = useActionSheet();
     const [loading, setLoading] = useState(true);
+    const [exporting, setExporting] = useState(false);
     const [topProducts, setTopProducts] = useState<{ product: Product; quantity: number }[]>([]);
 
     useEffect(() => {
@@ -28,17 +34,54 @@ export default function StatsScreen() {
             setLoading(true);
             await loadTransactions(500, user.role === 'admin' ? undefined : user.id); // Filter if not admin
             await loadProducts();
+            await loadUsers();
             await calculateTopProducts();
             setLoading(false);
         };
         init();
     }, [user]);
 
+    const handleExport = async () => {
+        // Use store state to ensure we're exporting the most current data
+        const currentTransactions = useTransactionStore.getState().transactions;
+        const currentUsers = useUserManagementStore.getState().users;
+
+        const options = ['Export as PDF', 'Export as CSV', t.common.cancel];
+        const cancelButtonIndex = 2;
+
+        showActionSheetWithOptions(
+            {
+                options,
+                cancelButtonIndex,
+                title: 'Pilih Format Laporan',
+            },
+            async (selectedIndex?: number) => {
+                if (selectedIndex === undefined || selectedIndex === cancelButtonIndex) return;
+
+                setExporting(true);
+                try {
+                    if (selectedIndex === 0) {
+                        await exportToPDF(currentTransactions, currentUsers);
+                    } else if (selectedIndex === 1) {
+                        await exportToCSV(currentTransactions, currentUsers);
+                    }
+                } catch (error) {
+                    Alert.alert('Error', 'Gagal mengekspor laporan');
+                } finally {
+                    setExporting(false);
+                }
+            }
+        );
+    };
+
     const calculateTopProducts = async () => {
         try {
+            const currentTransactions = useTransactionStore.getState().transactions;
+            const currentProducts = useProductStore.getState().products;
+
             const itemsMap: Record<string, number> = {};
             // To be efficient, we only check items from the last 100 transactions
-            const recentTxs = transactions.slice(0, 100);
+            const recentTxs = currentTransactions.slice(0, 100);
 
             for (const tx of recentTxs) {
                 const items = await db.getTransactionItems(tx.id);
@@ -49,7 +92,7 @@ export default function StatsScreen() {
 
             const sorted = Object.entries(itemsMap)
                 .map(([id, qty]) => ({
-                    product: products.find(p => p.id === id)!,
+                    product: currentProducts.find(p => p.id === id)!,
                     quantity: qty
                 }))
                 .filter(item => item.product)
@@ -111,7 +154,21 @@ export default function StatsScreen() {
                     <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
                 </TouchableOpacity>
                 <Text style={styles.title}>Statistik Bisnis</Text>
-                <View style={{ width: 40 }} />
+                {user?.role === 'admin' ? (
+                    <TouchableOpacity
+                        onPress={handleExport}
+                        style={styles.exportBtn}
+                        disabled={exporting}
+                    >
+                        {exporting ? (
+                            <ActivityIndicator size="small" color={theme.colors.primary} />
+                        ) : (
+                            <Ionicons name="share-outline" size={24} color={theme.colors.primary} />
+                        )}
+                    </TouchableOpacity>
+                ) : (
+                    <View style={{ width: 40 }} />
+                )}
             </View>
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -210,6 +267,11 @@ const styles = StyleSheet.create({
     },
     backBtn: {
         padding: 8,
+    },
+    exportBtn: {
+        padding: 8,
+        width: 40,
+        alignItems: 'center',
     },
     title: {
         fontSize: 18,

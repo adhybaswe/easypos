@@ -179,6 +179,11 @@ This Mobile POS application is designed to help small to medium businesses manag
 **Cashier**
 - Personal transaction history
 
+### 6.9 Export Reports (Admin Only)
+- [x] **Export to PDF**: Generate professional sale summary with revenue and transaction list.
+- [x] **Export to CSV**: Raw data export for spreadsheet integration (Excel/Google Sheets).
+- [x] **Sharing**: Integration with system share menu to send reports via Email, WhatsApp, or cloud storage.
+
 ---
 
 ## 7. Non-Functional Requirements
@@ -283,7 +288,6 @@ Zustand is used to manage:
 ## 10. Future Enhancements
 
 - Multi-outlet support
-- Export reports (PDF / Excel)
 - Payment gateway integration
 - Barcode scanner support
 - Offline mode
