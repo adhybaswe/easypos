@@ -1,5 +1,6 @@
 import { theme } from '@/constants/theme';
 import * as db from '@/services/db';
+import { getXenditQRCode } from '@/services/xendit';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { Product, Transaction, TransactionItem } from '@/types';
 import { formatCurrency } from '@/utils/formatCurrency';
@@ -7,7 +8,7 @@ import { useTranslation } from '@/utils/i18n';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function TransactionDetailScreen() {
     const router = useRouter();
@@ -20,6 +21,7 @@ export default function TransactionDetailScreen() {
     const [productsMap, setProductsMap] = useState<Record<string, Product>>({});
     const [cashierName, setCashierName] = useState<string>('Unknown');
     const [loading, setLoading] = useState(true);
+    const [checkingStatus, setCheckingStatus] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -52,6 +54,34 @@ export default function TransactionDetailScreen() {
             console.error(e);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleCheckStatus = async () => {
+        if (!id || !transaction?.xendit_external_id) return;
+
+        setCheckingStatus(true);
+        try {
+            const status = await getXenditQRCode(transaction.xendit_external_id);
+            console.log("Xendit Status:", status.status);
+
+            if (status.status === 'COMPLETED' || status.status === 'PAID') {
+                // Update di Supabase
+                const { getClient } = await import('@/services/supabase');
+                const client = getClient();
+                await client.from('transactions')
+                    .update({ payment_status: 'completed' })
+                    .eq('id', id);
+
+                Alert.alert("Sukses", "Pembayaran telah terverifikasi dan status diperbarui.");
+                loadDetails(id as string);
+            } else {
+                Alert.alert("Info", `Status pembayaran saat ini: ${status.status.toLowerCase()}`);
+            }
+        } catch (e: any) {
+            Alert.alert("Error", e.message || "Gagal mengecek status ke Xendit");
+        } finally {
+            setCheckingStatus(false);
         }
     };
 
@@ -98,6 +128,45 @@ export default function TransactionDetailScreen() {
 
                     <Text style={styles.label}>{t.transactionDetail.cashier}</Text>
                     <Text style={styles.value}>{cashierName}</Text>
+
+                    {transaction.payment_method === 'xendit' && (
+                        <>
+                            <View style={styles.divider} />
+                            <View style={styles.statusSection}>
+                                <View>
+                                    <Text style={styles.label}>Status Pembayaran</Text>
+                                    <View style={[
+                                        styles.statusBadge,
+                                        transaction.payment_status === 'completed' ? styles.statusCompleted : styles.statusPending
+                                    ]}>
+                                        <Text style={[
+                                            styles.statusText,
+                                            transaction.payment_status === 'completed' ? styles.statusTextCompleted : styles.statusTextPending
+                                        ]}>
+                                            {(transaction.payment_status || 'PENDING').toUpperCase()}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                {transaction.payment_status !== 'completed' && (
+                                    <TouchableOpacity
+                                        style={styles.checkStatusBtn}
+                                        onPress={handleCheckStatus}
+                                        disabled={checkingStatus}
+                                    >
+                                        {checkingStatus ? (
+                                            <ActivityIndicator size="small" color={theme.colors.white} />
+                                        ) : (
+                                            <>
+                                                <Ionicons name="refresh" size={16} color={theme.colors.white} />
+                                                <Text style={styles.checkStatusText}>Cek Status</Text>
+                                            </>
+                                        )}
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        </>
+                    )}
                 </View>
 
                 <Text style={styles.sectionHeader}>{t.transactionDetail.items}</Text>
@@ -235,5 +304,47 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
         color: theme.colors.text,
+    },
+    statusSection: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    statusBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+        alignSelf: 'flex-start',
+        marginTop: 4,
+    },
+    statusCompleted: {
+        backgroundColor: '#DCFCE7',
+    },
+    statusPending: {
+        backgroundColor: '#FEF9C3',
+    },
+    statusText: {
+        fontSize: 12,
+        fontWeight: '700',
+    },
+    statusTextCompleted: {
+        color: '#166534',
+    },
+    statusTextPending: {
+        color: '#854D0E',
+    },
+    checkStatusBtn: {
+        backgroundColor: theme.colors.primary,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        gap: 6,
+    },
+    checkStatusText: {
+        color: theme.colors.white,
+        fontWeight: 'bold',
+        fontSize: 14,
     },
 });

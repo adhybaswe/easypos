@@ -2,11 +2,15 @@ import { useConfigStore } from '@/stores/useConfigStore';
 import { Category, Discount, Product, Transaction, TransactionItem, User } from '@/types';
 import * as firebase from './firebase';
 import * as sqlite from './sqlite';
+import * as supabase from './supabase';
 
 const getBackend = () => {
     const { backendType } = useConfigStore.getState();
     if (backendType === 'firebase') {
         return firebase;
+    }
+    if (backendType === 'supabase') {
+        return supabase;
     }
     return sqlite;
 };
@@ -16,6 +20,8 @@ export const initDatabase = async () => {
     const { backendType } = useConfigStore.getState();
     if (backendType === 'firebase') {
         await firebase.initFirebase();
+    } else if (backendType === 'supabase') {
+        await supabase.initSupabase();
     } else {
         await sqlite.initDatabase();
     }

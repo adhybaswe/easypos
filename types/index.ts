@@ -48,12 +48,16 @@ export interface Transaction {
     discount_id?: string;
     discount_amount?: number;
     subtotal?: number;
+    payment_method?: 'cash' | 'xendit';
+    payment_status?: 'pending' | 'completed' | 'failed';
+    xendit_invoice_url?: string;
+    xendit_external_id?: string;
     created_at: string; // ISO string
     items?: TransactionItem[];
 }
 
 export interface AppConfig {
-    backendType: 'firebase' | 'sqlite' | null;
+    backendType: 'firebase' | 'sqlite' | 'supabase' | null;
     sqliteConfig?: {
         databaseName: string;
     };
@@ -64,6 +68,14 @@ export interface AppConfig {
         storageBucket: string;
         messagingSenderId: string;
         appId: string;
+    };
+    supabaseConfig?: {
+        supabaseUrl: string;
+        supabaseAnonKey: string;
+    };
+    xenditConfig?: {
+        secretKey: string;
+        webhookUrl?: string;
     };
     currencySymbol: string; // e.g. 'Rp', '$'
     currencyLocale: string; // e.g. 'id-ID', 'en-US'

@@ -8,11 +8,11 @@ import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View 
 
 export default function SetupScreen() {
     const router = useRouter();
-    const { setBackendType, setSqliteConfig, setFirebaseConfig, setSetupComplete, setCurrency } = useConfigStore();
+    const { setBackendType, setSqliteConfig, setFirebaseConfig, setSupabaseConfig, setXenditConfig, setSetupComplete, setCurrency } = useConfigStore();
     const { login } = useAuthStore();
 
     const [step, setStep] = useState(1);
-    const [backend, setBackend] = useState<'firebase' | 'sqlite' | null>(null);
+    const [backend, setBackend] = useState<'firebase' | 'sqlite' | 'supabase' | null>(null);
     const [loading, setLoading] = useState(false);
 
     // SQLite config state
@@ -27,6 +27,14 @@ export default function SetupScreen() {
         messagingSenderId: '355211235039',
         appId: '1:355211235039:web:88c72afd698b1142b2236a'
     });
+    const [supabaseConfig, setSupabaseConfigState] = useState({
+        supabaseUrl: 'https://mtmitpvpainxcvyortwb.supabase.co',
+        supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10bWl0cHZwYWlueGN2eW9ydHdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzMTE5NjksImV4cCI6MjA4NTg4Nzk2OX0.6V-bm6lyOqK6PAKtCsxBAnHv2dJmi2xMy2M5LVGz6Dk'
+    });
+    const [xenditConfig, setXenditConfigState] = useState({
+        secretKey: 'xnd_development_bM4W0FyWgedUwwytWlrlXseNLEl5TPlUhmmcXxBZjmwGbp87CoOkvGfAcQ6oZWI',
+        webhookUrl: 'https://mtmitpvpainxcvyortwb.supabase.co/functions/v1/webhooh-xendit'
+    });
 
     // Admin config state
     const [username, setUsername] = useState('');
@@ -36,7 +44,7 @@ export default function SetupScreen() {
     const [currencySymbol, setCurrencySymbol] = useState('Rp');
     const [currencyLocale, setCurrencyLocale] = useState('id-ID');
 
-    const handleBackendSelect = (type: 'firebase' | 'sqlite') => {
+    const handleBackendSelect = (type: 'firebase' | 'sqlite' | 'supabase') => {
         setBackend(type);
     };
 
@@ -61,6 +69,15 @@ export default function SetupScreen() {
                     return;
                 }
                 setFirebaseConfig(firebaseConfig);
+            } else if (backend === 'supabase') {
+                if (!supabaseConfig.supabaseUrl || !supabaseConfig.supabaseAnonKey) {
+                    Alert.alert('Error', 'Please enter URL and Anon Key');
+                    return;
+                }
+                setSupabaseConfig(supabaseConfig);
+                if (xenditConfig.secretKey) {
+                    setXenditConfig(xenditConfig);
+                }
             }
             setStep(2);
         }
@@ -110,7 +127,7 @@ export default function SetupScreen() {
             }
 
             setSetupComplete(true);
-            router.replace('/(app)/(tabs)');
+            router.replace('/(app)');
         } catch (e: any) {
             console.error(e);
             Alert.alert('Error', 'Setup failed: ' + e.message);
@@ -140,6 +157,12 @@ export default function SetupScreen() {
                         >
                             <Text style={[styles.optionText, backend === 'sqlite' && styles.selectedText]}>Local SQLite</Text>
                         </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.option, backend === 'supabase' && styles.selected]}
+                            onPress={() => handleBackendSelect('supabase')}
+                        >
+                            <Text style={[styles.optionText, backend === 'supabase' && styles.selectedText]}>Supabase</Text>
+                        </TouchableOpacity>
                     </View>
 
                     {backend === 'sqlite' && (
@@ -165,6 +188,43 @@ export default function SetupScreen() {
                             <TextInput style={styles.input} placeholder="Storage Bucket (Optional)" placeholderTextColor={theme.colors.textSecondary} value={firebaseConfig.storageBucket} onChangeText={(t) => setFirebaseConfigState({ ...firebaseConfig, storageBucket: t })} />
                             <TextInput style={styles.input} placeholder="Messaging Sender ID (Optional)" placeholderTextColor={theme.colors.textSecondary} value={firebaseConfig.messagingSenderId} onChangeText={(t) => setFirebaseConfigState({ ...firebaseConfig, messagingSenderId: t })} />
                             <TextInput style={styles.input} placeholder="App ID (Optional)" placeholderTextColor={theme.colors.textSecondary} value={firebaseConfig.appId} onChangeText={(t) => setFirebaseConfigState({ ...firebaseConfig, appId: t })} />
+                        </View>
+                    )}
+
+                    {backend === 'supabase' && (
+                        <View style={styles.form}>
+                            <Text style={styles.label}>Supabase Configuration</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Supabase URL"
+                                placeholderTextColor={theme.colors.textSecondary}
+                                value={supabaseConfig.supabaseUrl}
+                                onChangeText={(t) => setSupabaseConfigState({ ...supabaseConfig, supabaseUrl: t })}
+                            />
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Anon Key"
+                                placeholderTextColor={theme.colors.textSecondary}
+                                value={supabaseConfig.supabaseAnonKey}
+                                onChangeText={(t) => setSupabaseConfigState({ ...supabaseConfig, supabaseAnonKey: t })}
+                            />
+
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Xendit Secret Key (xnd_development_...)"
+                                placeholderTextColor={theme.colors.textSecondary}
+                                value={xenditConfig.secretKey}
+                                onChangeText={(t) => setXenditConfigState({ ...xenditConfig, secretKey: t })}
+                                secureTextEntry
+                            />
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Webhook URL (Supabase Edge Function)"
+                                placeholderTextColor={theme.colors.textSecondary}
+                                value={xenditConfig.webhookUrl}
+                                onChangeText={(t) => setXenditConfigState({ ...xenditConfig, webhookUrl: t })}
+                            />
+                            <Text style={styles.hint}>Jika diisi, pembayaran via QRIS/E-Wallet akan tersedia.</Text>
                         </View>
                     )}
                 </View>

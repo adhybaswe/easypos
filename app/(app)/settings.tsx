@@ -4,15 +4,19 @@ import { useConfigStore } from '@/stores/useConfigStore';
 import { useTranslation } from '@/utils/i18n';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SettingsScreen() {
     const { logout, user } = useAuthStore();
-    const { language, setLanguage, resetConfig } = useConfigStore();
+    const { language, setLanguage, backendType, xenditConfig, setXenditConfig, resetConfig } = useConfigStore();
     const t = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
+
+    const [tempSecretKey, setTempSecretKey] = useState(xenditConfig?.secretKey || 'xnd_development_bM4W0FyWgedUwwytWlrlXseNLEl5TPlUhmmcXxBZjmwGbp87CoOkvGfAcQ6oZWI');
+    const [tempWebhookUrl, setTempWebhookUrl] = useState(xenditConfig?.webhookUrl || '');
 
 
 
@@ -90,6 +94,31 @@ export default function SettingsScreen() {
                         </TouchableOpacity>
                     </View>
                 </View>
+
+                {user?.role === 'admin' && backendType === 'supabase' && (
+                    <View style={styles.section}>
+                        <Text style={styles.label}>Xendit Secret Key:</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={tempSecretKey}
+                            onChangeText={setTempSecretKey}
+                            onBlur={() => setXenditConfig({ ...xenditConfig, secretKey: tempSecretKey, webhookUrl: tempWebhookUrl })}
+                            placeholder="xnd_development_..."
+                            placeholderTextColor={theme.colors.textSecondary}
+                            secureTextEntry
+                        />
+                        <Text style={styles.label}>Webhook URL (Supabase Edge Function):</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={tempWebhookUrl}
+                            onChangeText={setTempWebhookUrl}
+                            onBlur={() => setXenditConfig({ ...xenditConfig, secretKey: tempSecretKey, webhookUrl: tempWebhookUrl })}
+                            placeholder="https://..."
+                            placeholderTextColor={theme.colors.textSecondary}
+                        />
+                        <Text style={styles.hint}>Digunakan untuk pembayaran QRIS otomatis.</Text>
+                    </View>
+                )}
 
                 {user?.role === 'admin' && (
                     <View style={styles.section}>
@@ -217,5 +246,21 @@ const styles = StyleSheet.create({
         color: theme.colors.error,
         fontSize: 14,
         fontWeight: '600',
+    },
+    input: {
+        backgroundColor: theme.colors.background,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        fontSize: 14,
+        color: theme.colors.text,
+        marginTop: 4,
+    },
+    hint: {
+        fontSize: 12,
+        color: theme.colors.textSecondary,
+        marginTop: 8,
     },
 });

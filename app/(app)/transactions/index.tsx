@@ -41,6 +41,23 @@ export default function HistoryScreen() {
                         minute: '2-digit'
                     })}
                 </Text>
+                {item.payment_status && (
+                    <View style={[
+                        styles.statusBadge,
+                        item.payment_status === 'completed' && styles.statusCompleted,
+                        item.payment_status === 'pending' && styles.statusPending,
+                        item.payment_status === 'failed' && styles.statusFailed,
+                    ]}>
+                        <Text style={[
+                            styles.statusText,
+                            item.payment_status === 'completed' && styles.statusTextCompleted,
+                            item.payment_status === 'pending' && styles.statusTextPending,
+                            item.payment_status === 'failed' && styles.statusTextFailed,
+                        ]}>
+                            {item.payment_status.toUpperCase()}
+                        </Text>
+                    </View>
+                )}
             </View>
             <View style={{ alignItems: 'flex-end' }}>
                 <Text style={styles.amountText}>
@@ -148,5 +165,36 @@ const styles = StyleSheet.create({
         marginTop: 16,
         fontSize: 16,
         color: theme.colors.textSecondary,
+    },
+    statusBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 6,
+        alignSelf: 'flex-start',
+        marginTop: 4,
+        backgroundColor: theme.colors.border,
+    },
+    statusCompleted: {
+        backgroundColor: '#DCFCE7',
+    },
+    statusPending: {
+        backgroundColor: '#FEF9C3',
+    },
+    statusFailed: {
+        backgroundColor: '#FEE2E2',
+    },
+    statusText: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: theme.colors.textSecondary,
+    },
+    statusTextCompleted: {
+        color: '#166534',
+    },
+    statusTextPending: {
+        color: '#854D0E',
+    },
+    statusTextFailed: {
+        color: '#991B1B',
     },
 });

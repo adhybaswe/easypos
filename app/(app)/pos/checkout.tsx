@@ -1,6 +1,7 @@
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { theme } from '@/constants/theme';
 import { createTransaction } from '@/services/db';
+import { createXenditQRCode, getXenditQRCode } from '@/services/xendit';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useCartStore } from '@/stores/useCartStore';
 import { useConfigStore } from '@/stores/useConfigStore';
@@ -11,13 +12,13 @@ import { translations } from '@/utils/i18n';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, FlatList, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function CheckoutScreen() {
     const router = useRouter();
     const { items, total, clearCart } = useCartStore();
     const { user } = useAuthStore();
-    const { language, currencySymbol } = useConfigStore();
+    const { language, currencySymbol, backendType, xenditConfig } = useConfigStore();
     const t = translations[language];
 
     const totalAmountBeforeDiscount = total();
@@ -25,10 +26,116 @@ export default function CheckoutScreen() {
     const [selectedDiscount, setSelectedDiscount] = useState<Discount | null>(null);
     const [showDiscountModal, setShowDiscountModal] = useState(false);
     const [paymentAmount, setPaymentAmount] = useState('');
+    const [paymentMethod, setPaymentMethod] = useState<'cash' | 'xendit'>(
+        backendType === 'supabase' && xenditConfig?.secretKey ? 'xendit' : 'cash'
+    );
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [qrString, setQrString] = useState<string | null>(null);
+    const [qrId, setQrId] = useState<string | null>(null); // Xendit ID (For Polling)
+    const [externalQrId, setExternalQrId] = useState<string | null>(null); // External ID (For Display/Sim)
+    const [showQRModal, setShowQRModal] = useState(false);
+    const [currentTransactionId, setCurrentTransactionId] = useState<string | null>(null);
 
     useEffect(() => {
         loadDiscounts();
     }, []);
+
+    // Polling logic for QRIS status
+    useEffect(() => {
+        let interval: any;
+
+        if (showQRModal && qrId) {
+            console.log("Memulai polling untuk QR:", qrId);
+            interval = setInterval(async () => {
+                try {
+                    // 1. Cek status di Xendit
+                    const status = await getXenditQRCode(qrId);
+                    console.log("Status QR Xendit:", status.status);
+
+                    // 2. Cek status di Supabase (sebagai cadangan jika webhook sudah masuk)
+                    let isCompletedInDb = false;
+                    if (backendType === 'supabase' && currentTransactionId) {
+                        const { getClient } = await import('@/services/supabase');
+                        const { data } = await getClient()
+                            .from('transactions')
+                            .select('payment_status')
+                            .eq('id', currentTransactionId)
+                            .single();
+                        isCompletedInDb = data?.payment_status === 'completed';
+                    }
+
+                    // Jika Xendit bilang sukses ATAU Berubah jadi INACTIVE 
+                    // ATAU Database sudah terupdate oleh Webhook
+                    if (status.status === 'COMPLETED' || status.status === 'PAID' || status.status === 'INACTIVE' || isCompletedInDb) {
+                        console.log("Pembayaran Terdeteksi (Via API/DB/Webhook)! Mengalihkan...");
+                        clearInterval(interval);
+                        handleFinishTransaction();
+                    }
+                } catch (e) {
+                    console.error("Polling Error:", e);
+                }
+            }, 3000); // Cek setiap 3 detik
+        }
+
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [showQRModal, qrId]);
+
+    const handleFinishTransaction = async () => {
+        if (!qrId) return;
+
+        setIsProcessing(true);
+        try {
+            const status = await getXenditQRCode(qrId);
+            console.log("Verifikasi Manual Status:", status.status);
+
+            // Cek Supabase juga kalau-kalau webhook sudah sukses duluan
+            let isCompletedInDb = false;
+            if (backendType === 'supabase' && currentTransactionId) {
+                const { getClient } = await import('@/services/supabase');
+                const { data } = await getClient()
+                    .from('transactions')
+                    .select('payment_status')
+                    .eq('id', currentTransactionId)
+                    .single();
+                isCompletedInDb = data?.payment_status === 'completed';
+            }
+
+            if (status.status === 'COMPLETED' || status.status === 'PAID' || status.status === 'INACTIVE' || isCompletedInDb) {
+                // Hanya jika Xendit/DB bilang ok, baru update Supabase ke completed (jika belum)
+                if (backendType === 'supabase' && currentTransactionId && !isCompletedInDb) {
+                    const { getClient } = await import('@/services/supabase');
+                    const client = getClient();
+                    await client.from('transactions')
+                        .update({ payment_status: 'completed' })
+                        .eq('id', currentTransactionId);
+                }
+
+                setShowQRModal(false);
+                clearCart();
+                router.replace({
+                    pathname: '/(app)/pos/success',
+                    params: {
+                        id: currentTransactionId || '',
+                        change: '0',
+                        total: totalAmount.toFixed(2),
+                        paymentMethod: 'xendit'
+                    }
+                });
+            } else {
+                // Jika belum bayar, jangan biarkan masuk!
+                Alert.alert(
+                    "Pembayaran Belum Masuk",
+                    "Kami belum mendeteksi pembayaran di sistem Xendit. Silakan pastikan pelanggan sudah berhasil melakukan scan dan pembayaran."
+                );
+            }
+        } catch (err: any) {
+            Alert.alert("Error Verifikasi", err.message || "Gagal menghubungi Xendit");
+        } finally {
+            setIsProcessing(false);
+        }
+    };
 
     const discountAmount = selectedDiscount
         ? (selectedDiscount.type === 'percentage'
@@ -41,15 +148,20 @@ export default function CheckoutScreen() {
     const isSufficient = change >= 0;
 
     const handlePayment = async () => {
-        if (!paymentAmount) return;
-        if (!isSufficient) {
-            Alert.alert(t.common.error, t.checkout.insufficientPayment);
-            return;
+        if (paymentMethod === 'cash') {
+            if (!paymentAmount) return;
+            if (!isSufficient) {
+                Alert.alert(t.common.error, t.checkout.insufficientPayment);
+                return;
+            }
         }
 
-        try {
-            const transactionId = Date.now().toString();
+        setIsProcessing(true);
 
+        try {
+            const transactionId = backendType === 'supabase' ? (Math.random().toString(36).substring(2, 15)) : Date.now().toString();
+
+            // 1. Persiapkan data transaksi (Tanpa Id Xendit dulu)
             const transaction: Transaction = {
                 id: transactionId,
                 user_id: user?.id || 'unknown',
@@ -57,20 +169,59 @@ export default function CheckoutScreen() {
                 discount_id: selectedDiscount?.id,
                 discount_amount: discountAmount,
                 total_amount: totalAmount,
-                payment_amount: parseFloat(paymentAmount),
-                change_amount: change,
+                payment_amount: paymentMethod === 'xendit' ? totalAmount : parseFloat(paymentAmount),
+                change_amount: paymentMethod === 'xendit' ? 0 : change,
+                payment_method: paymentMethod,
+                payment_status: paymentMethod === 'xendit' ? 'pending' : 'completed',
                 created_at: new Date().toISOString()
             };
 
             const transactionItems: TransactionItem[] = items.map(item => ({
-                id: Date.now().toString() + Math.random().toString().slice(2),
+                id: backendType === 'supabase' ? (Math.random().toString(36).substring(2, 15)) : (Date.now().toString() + Math.random().toString().slice(2)),
                 transaction_id: transactionId,
                 product_id: item.id,
                 quantity: item.quantity,
                 price: item.price
             }));
 
+            // 2. Simpan ke Supabase Terlebih Dahulu (App -> Supabase)
+            // Kita simpan status 'pending' untuk QRIS
             await createTransaction(transaction, transactionItems);
+
+            let finalXenditUrl = '';
+
+            // 3. Jika metode Xendit, baru panggil Xendit (Supabase -> Xendit)
+            if (paymentMethod === 'xendit') {
+                try {
+                    const qrResponse = await createXenditQRCode(transactionId, totalAmount);
+
+                    setQrString(qrResponse.qr_string);
+                    setQrId(qrResponse.id);
+                    setExternalQrId(qrResponse.external_id);
+                    setCurrentTransactionId(transactionId);
+                    setShowQRModal(true);
+
+                    // Update transaksi di Supabase dengan ID QR Code (Opsional)
+                    if (backendType === 'supabase') {
+                        const { getClient } = await import('@/services/supabase');
+                        const client = getClient();
+                        await client.from('transactions')
+                            .update({
+                                xendit_external_id: qrResponse.id
+                            })
+                            .eq('id', transactionId);
+                    }
+
+                    setIsProcessing(false);
+                    return; // Stop here to show the QR Modal
+
+                } catch (xerr: any) {
+                    console.error("Xendit QR Error:", xerr);
+                    Alert.alert("Xendit Error", "Gagal membuat QRIS: " + xerr.message);
+                    setIsProcessing(false);
+                    return;
+                }
+            }
 
             clearCart();
 
@@ -79,12 +230,15 @@ export default function CheckoutScreen() {
                 params: {
                     id: transactionId,
                     change: change.toFixed(2),
-                    total: totalAmount.toFixed(2)
+                    total: totalAmount.toFixed(2),
+                    paymentMethod: 'cash'
                 }
             });
 
         } catch (e: any) {
             Alert.alert(t.common.error, e.message);
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -141,18 +295,43 @@ export default function CheckoutScreen() {
                         <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
                     </TouchableOpacity>
 
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>{t.checkout.cashReceived}</Text>
-                        <CurrencyInput
-                            value={paymentAmount}
-                            onChangeValue={setPaymentAmount}
-                            placeholder="0"
-                            autoFocus
-                        />
-                    </View>
+                    {/* Payment Method Selection (Supabase only) */}
+                    {backendType === 'supabase' && xenditConfig?.secretKey && (
+                        <View style={styles.methodContainer}>
+                            <Text style={styles.suggestionsLabel}>Metode Pembayaran</Text>
+                            <View style={styles.methodRow}>
+                                <TouchableOpacity
+                                    style={[styles.methodBtn, paymentMethod === 'cash' && styles.methodBtnActive]}
+                                    onPress={() => setPaymentMethod('cash')}
+                                >
+                                    <Ionicons name="cash-outline" size={20} color={paymentMethod === 'cash' ? theme.colors.white : theme.colors.text} />
+                                    <Text style={[styles.methodText, paymentMethod === 'cash' && styles.methodTextActive]}>Tunai</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.methodBtn, paymentMethod === 'xendit' && styles.methodBtnActive]}
+                                    onPress={() => setPaymentMethod('xendit')}
+                                >
+                                    <Ionicons name="qr-code-outline" size={20} color={paymentMethod === 'xendit' ? theme.colors.white : theme.colors.text} />
+                                    <Text style={[styles.methodText, paymentMethod === 'xendit' && styles.methodTextActive]}>QRIS</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    )}
+
+                    {paymentMethod === 'cash' && (
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>{t.checkout.cashReceived}</Text>
+                            <CurrencyInput
+                                value={paymentAmount}
+                                onChangeValue={setPaymentAmount}
+                                placeholder="0"
+                                autoFocus
+                            />
+                        </View>
+                    )}
 
                     {/* Quick Suggestions */}
-                    {suggestionAmounts.length > 0 && (
+                    {paymentMethod === 'cash' && suggestionAmounts.length > 0 && (
                         <View style={styles.suggestionsContainer}>
                             <Text style={styles.suggestionsLabel}>{t.checkout.quickSelect}</Text>
                             <View style={styles.suggestions}>
@@ -173,7 +352,7 @@ export default function CheckoutScreen() {
                     <View style={styles.spacer} />
 
                     {/* Change / Remaining Card */}
-                    {paymentAmount !== '' && (
+                    {paymentMethod === 'cash' && paymentAmount !== '' && (
                         <View style={[
                             styles.resultCard,
                             isSufficient ? styles.resultPositive : styles.resultNegative
@@ -195,17 +374,38 @@ export default function CheckoutScreen() {
                             </Text>
                         </View>
                     )}
+
+                    {paymentMethod === 'xendit' && (
+                        <View style={styles.infoCard}>
+                            <Ionicons name="information-circle-outline" size={24} color={theme.colors.primary} />
+                            <Text style={styles.infoText}>
+                                Transaksi akan dicatat di database, kemudian Anda akan diarahkan ke halaman pembayaran QRIS.
+                            </Text>
+                        </View>
+                    )}
                 </ScrollView>
 
                 <View style={styles.footer}>
                     <TouchableOpacity
-                        style={[styles.payBtn, !isSufficient && styles.payBtnDisabled]}
+                        style={[
+                            styles.payBtn,
+                            paymentMethod === 'cash' && !isSufficient && styles.payBtnDisabled,
+                            isProcessing && styles.payBtnDisabled
+                        ]}
                         onPress={handlePayment}
-                        disabled={!isSufficient}
+                        disabled={(paymentMethod === 'cash' && !isSufficient) || isProcessing}
                         activeOpacity={0.8}
                     >
-                        <Text style={styles.payText}>{t.checkout.completePayment}</Text>
-                        {isSufficient && <Ionicons name="arrow-forward" size={20} color={theme.colors.white} />}
+                        {isProcessing ? (
+                            <ActivityIndicator color={theme.colors.white} />
+                        ) : (
+                            <>
+                                <Text style={styles.payText}>
+                                    {paymentMethod === 'xendit' ? 'Bayar via QRIS' : t.checkout.completePayment}
+                                </Text>
+                                {(paymentMethod === 'xendit' || isSufficient) && <Ionicons name="arrow-forward" size={20} color={theme.colors.white} />}
+                            </>
+                        )}
                     </TouchableOpacity>
                 </View>
 
@@ -251,6 +451,59 @@ export default function CheckoutScreen() {
                                     </View>
                                 }
                             />
+                        </View>
+                    </View>
+                </Modal>
+
+                {/* QRIS Display Modal */}
+                <Modal visible={showQRModal} animationType="fade" transparent>
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.qrModalContent}>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>Scan QRIS untuk Bayar</Text>
+                                <TouchableOpacity onPress={() => setShowQRModal(false)}>
+                                    <Ionicons name="close" size={24} color={theme.colors.text} />
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={styles.qrContainer}>
+                                {qrString && (
+                                    <Image
+                                        source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${qrString}` }}
+                                        style={styles.qrImage}
+                                    />
+                                )}
+                                <Text style={styles.totalLabel}>Total Tagihan</Text>
+                                <Text style={styles.qrTotalValue}>{formatCurrency(totalAmount)}</Text>
+                            </View>
+
+                            <View style={styles.qrInfo}>
+                                <Ionicons name="shield-checkmark-outline" size={20} color={theme.colors.success} />
+                                <Text style={styles.qrInfoText}>Pembayaran terverifikasi otomatis oleh Xendit</Text>
+                            </View>
+
+                            {/* Simulation Info for Sandbox/Dev */}
+                            {xenditConfig?.secretKey?.startsWith('xnd_development_') && (
+                                <View style={styles.devNote}>
+                                    <Text style={styles.devNoteTitle}>Sandbox Mode: Simulasi Pembayaran</Text>
+                                    <Text style={styles.devNoteDesc}>Salin External ID ini ke Postman:</Text>
+                                    <TouchableOpacity
+                                        style={styles.copyIdBox}
+                                        onPress={() => Alert.alert("External ID (Simulasi)", externalQrId || '')}
+                                    >
+                                        <Text style={styles.copyIdText}>{externalQrId}</Text>
+                                        <Ionicons name="copy-outline" size={16} color={theme.colors.textSecondary} />
+                                    </TouchableOpacity>
+                                    <Text style={styles.devNoteHint}>Path URL: /qr_codes/{'{EXTERNAL_ID}'}/payments/simulate</Text>
+                                </View>
+                            )}
+
+                            <TouchableOpacity
+                                style={styles.doneBtn}
+                                onPress={handleFinishTransaction}
+                            >
+                                <Text style={styles.doneBtnText}>Saya Sudah Bayar</Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </Modal>
@@ -361,6 +614,71 @@ const styles = StyleSheet.create({
         color: theme.colors.text,
         fontWeight: '600',
         fontSize: 16,
+    },
+    payNowText: {
+        color: theme.colors.white,
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    qrModalContent: {
+        backgroundColor: theme.colors.card,
+        borderTopLeftRadius: 32,
+        borderTopRightRadius: 32,
+        padding: 24,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+        width: '100%',
+        alignItems: 'center',
+        marginTop: 'auto', // Push to bottom
+    },
+    qrContainer: {
+        alignItems: 'center',
+        marginVertical: 20,
+        backgroundColor: theme.colors.white,
+        padding: 24,
+        borderRadius: 24,
+        width: '100%',
+    },
+    qrImage: {
+        width: 280,
+        height: 280,
+        marginBottom: 16,
+    },
+    totalLabel: {
+        fontSize: 14,
+        color: theme.colors.textSecondary,
+        marginBottom: 4,
+    },
+    qrTotalValue: {
+        fontSize: 24,
+        fontWeight: '800',
+        color: theme.colors.text,
+    },
+    qrInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        backgroundColor: theme.colors.success + '10',
+        padding: 12,
+        borderRadius: 12,
+        marginBottom: 24,
+    },
+    qrInfoText: {
+        fontSize: 12,
+        color: theme.colors.success,
+        fontWeight: '600',
+        flex: 1,
+    },
+    doneBtn: {
+        backgroundColor: theme.colors.primary,
+        width: '100%',
+        padding: 18,
+        borderRadius: 16,
+        alignItems: 'center',
+    },
+    doneBtnText: {
+        color: theme.colors.white,
+        fontSize: 16,
+        fontWeight: 'bold',
     },
     resultCard: {
         padding: 24,
@@ -525,5 +843,92 @@ const styles = StyleSheet.create({
     emptyDiscountsText: {
         color: theme.colors.textSecondary,
         fontSize: 16,
+    },
+    methodContainer: {
+        marginBottom: 24,
+    },
+    methodRow: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    methodBtn: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: theme.colors.card,
+        padding: 14,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        gap: 8,
+    },
+    methodBtnActive: {
+        backgroundColor: theme.colors.primary,
+        borderColor: theme.colors.primary,
+    },
+    methodText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: theme.colors.text,
+    },
+    methodTextActive: {
+        color: theme.colors.white,
+    },
+    infoCard: {
+        flexDirection: 'row',
+        backgroundColor: theme.colors.primary + '10',
+        padding: 16,
+        borderRadius: 16,
+        gap: 12,
+        marginTop: 20,
+    },
+    infoText: {
+        flex: 1,
+        fontSize: 14,
+        color: theme.colors.text,
+        lineHeight: 20,
+    },
+    devNote: {
+        backgroundColor: theme.colors.background,
+        padding: 16,
+        borderRadius: 16,
+        width: '100%',
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        borderStyle: 'dashed',
+    },
+    devNoteTitle: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: theme.colors.primary,
+        marginBottom: 8,
+    },
+    devNoteDesc: {
+        fontSize: 12,
+        color: theme.colors.textSecondary,
+        marginBottom: 8,
+    },
+    copyIdBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: theme.colors.card,
+        padding: 10,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+    },
+    copyIdText: {
+        fontSize: 12,
+        fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+        color: theme.colors.text,
+    },
+    devNoteHint: {
+        fontSize: 10,
+        color: theme.colors.textSecondary,
+        marginTop: 8,
+        fontStyle: 'italic',
     },
 });
